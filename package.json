@@ -1,0 +1,27 @@
+{
+  "name": "server-rules",
+  "description": "server-rules",
+  "version": "1.0.0",
+  "author": "SalviaDeveloppement",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/mocha": "latest",
+    "@types/node": "latest",
+    "@types/power-assert": "latest",
+    "del": "latest",
+    "gulp": "latest",
+    "gulp-typescript": "latest",
+    "merge2": "latest",
+    "mocha": "latest",
+    "ts-node": "latest",
+    "typescript": "2.x.x"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mihaistoie/histria-utils"
+  },
+  "types": "./definitions/index.d.ts",
+  "scripts": {
+    "test": "mocha --compilers ts:ts-node/register test/**/*.test.ts"
+  }
+}
