@@ -1,6 +1,7 @@
 import { ModelObject } from './interfaces';
 export declare class BaseModel implements ModelObject {
     private _cachePath;
+    private _initialized;
     isNull: boolean;
     isUndefined: boolean;
     uuid: string;
@@ -8,6 +9,7 @@ export declare class BaseModel implements ModelObject {
     protected _owner: any;
     protected _schema: any;
     protected _model: any;
+    protected _children: any;
     protected _propertyName: string;
     protected getFullPath(): string;
     isArray(): boolean;
@@ -20,4 +22,8 @@ export declare class BaseModel implements ModelObject {
     onStateChange: (propertyName: string, params: any) => void;
     onChange: (propertyName: string, operation: string, params: any) => void;
     constructor(owner: any, propertyName: string, schema: any, value: any);
+    destroy(): void;
+    private _beforeChange(propertyName, schema, oldValue, value, forceContinue);
+    private _createProperty(propertyName);
+    private _initFromSchema();
 }

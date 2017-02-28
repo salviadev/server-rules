@@ -2,13 +2,17 @@
 import * as utils from '../core/utils';
 import * as schema from './schema';
 import * as modelHelper from './helper';
+
+import { Message } from './consts';
+
 import { ModelObject } from './interfaces';
 
 export class BaseModel implements ModelObject {
 
     private _cachePath: string;
+    private _cacheRoot: BaseModel;
 
-    private _initialized: any;
+    protected _initialized: any;
     //is null ?
     public isNull: boolean;
     // is undefined ?
@@ -25,14 +29,60 @@ export class BaseModel implements ModelObject {
     protected _model: any;
     //children
     protected _children: any;
+    //states
+    protected _states: any;
+    //errors
+    protected _errors: any;
 
+    //states
+    public get $states() {
+        return this._states;
+    }
+    //states
+    public get $schema() {
+        return this._schema;
+
+    }
     // is empty only for the root owner
     // for items of an array (one-to-many) _propertyName === '$item' 
     protected _propertyName: string;
 
+    protected getRoot(): BaseModel {
+        let that = this;
+        if (!that._cacheRoot) {
+            if (that._owner)
+                that._cacheRoot = that._owner.getRoot();
+            else
+                that._cacheRoot = that;
+
+        }
+        return that._cacheRoot;
+    }
+    protected _getPropertyPath(propertyName?: string) {
+        let that = this;
+        let fp = that.getFullPath();
+        if (!propertyName) return fp;
+        return fp ? (fp + '.' + propertyName) : propertyName;
+    }
+    protected setModel(value: any, notify: boolean): void {
+        let that = this;
+        that._model = value;
+        that.isUndefined = value === undefined;
+        that.isNull = value === null;
+        if (that._owner && !that._owner.isArray()) {
+            let om = that._owner.model();
+            om[that._propertyName] = value;
+        }
+        that.afterSetModel(notify);
+    }
+    protected afterSetModel(notify: boolean): void {
+    }
+    protected replaceCompositionObject(propertyName: string, value: any): void {
+    }
+
     protected getFullPath(): string {
         let that = this;
-        if (!that._cachePath === undefined) {
+        if (that._cachePath === undefined) {
             let segments: string[] = [];
             if (that._owner)
                 segments.push(that._owner.getFullPath())
@@ -42,8 +92,14 @@ export class BaseModel implements ModelObject {
         }
         return that._cachePath;
     }
+    protected _createProperties() {
 
-    public isArray(): boolean { return schema.isArrayOfObjects(this._schema); }
+    }
+
+    public isArray(): boolean {
+        let that = this;
+        return schema.isArrayOfObjects(that._schema, that.getRoot()._schema);
+    }
 
     public get owner(): ModelObject {
         return <ModelObject>this._owner;
@@ -51,6 +107,9 @@ export class BaseModel implements ModelObject {
     public addErrors(alerts: { message: string, severity?: number }[], add?: boolean): void {
     }
 
+
+    public firePropChangedChanged(operation: number, propertyName: string, oldvalue: any, newValue: any, params: any): void {
+    }
     public fireMetaDataChanged(propertyName: string, params: any): void {
         let that = this, parent = that.owner;
         if (that._frozen) return;
@@ -71,21 +130,16 @@ export class BaseModel implements ModelObject {
 
     constructor(owner: any, propertyName: string, schema: any, value: any) {
         let that = this;
+        that.uuid = utils.uuid()
         that._owner = owner;
         that._propertyName = propertyName;
         that._schema = schema;
         that._children = {};
         that._initialized = {};
-        //that._initFromSchema(schema);        
-
-        /*
+        that._states = {};
+        that._errors = {};
         //create properties
         that._createProperties();
-        //create errors
-        that._createErrors();
-        //create states
-        that._createStates();
-        */
     }
     public destroy() {
         let that = this;
@@ -93,16 +147,66 @@ export class BaseModel implements ModelObject {
             modelHelper.destroyObject(that._children);
             that._children = null;
         }
+        if (that._states) {
+            modelHelper.destroyObject(that._states);
+            that._states = null;
+        }
+        if (that._errors) {
+            modelHelper.destroyObject(that._errors);
+            that._errors = null;
+        }
         that._schema = null;
         that._model = null;
         that._owner = null;
         that._initialized = null;
     }
 
+
+}
+
+export class ArrayModel extends BaseModel {
+    private _items: ObjectModel[];
+    constructor(owner: any, propertyName: string, schema: any, value: any) {
+        super(owner, propertyName, schema, value);
+    }
+    public clearItems() {
+        let that = this;
+        if (that._items) {
+            that._items.forEach(item => item.destroy());
+            that._items = null;
+        }
+    }
+    public destroy() {
+        let that = this;
+        if (that._items) {
+            that._items.forEach(item => item.destroy());
+            that._items = null;
+        }
+        super.destroy();
+    }
+    protected afterSetModel(notify: boolean): void {
+        let that = this;
+        that._model = that._model || [];
+        that._items = that._items || [];
+        that.clearItems();
+        // create items
+        let root = that.getRoot();
+        that._model.forEach((modelItem: any) => {
+            that._items.push(new ObjectModel(that, '$item', schema.expandRefProp(that.$schema, root.$schema), modelItem));
+        });
+        if (notify)
+            that.firePropChangedChanged(Message.PropChanged, '', null, null, { source: that._getPropertyPath(), instance: that });
+    }
+
+}
+
+
+
+export class ObjectModel extends BaseModel {
     private _beforeChange(propertyName: string, schema: any, oldValue: any, value: any, forceContinue: boolean): { continue: boolean, value: any } {
         let that = this;
         let res = { continue: true, value: value }
-        if (_su.isNumber(schema) && !isNaN(value) && value !== null && value !== undefined) {
+        if (schema.isNumber(schema) && !isNaN(value) && value !== null && value !== undefined) {
             if (that.$states[propertyName] && that.$states[propertyName].decimals !== undefined) {
                 res.value = parseFloat(value.toFixed(that.$states[propertyName].decimals));
                 if (!forceContinue && oldValue === res.value)
@@ -112,238 +216,62 @@ export class BaseModel implements ModelObject {
         }
         return res;
     }
-
+    protected replaceCompositionObject(propertyName: string, value: any): void {
+        let that = this;
+        if (that._children[propertyName]) {
+            that._children[propertyName].destroy();
+            if (!value) delete that._children[propertyName];
+        }
+        that._model[propertyName] = value;
+        if (value)
+            that._children[propertyName] = new ObjectModel(that, propertyName, that._schema.properties[propertyName], value);
+    }
 
     private _createProperty(propertyName: string): void {
         let obj = this;
-
         Object.defineProperty(obj, propertyName, {
             get: function (): any {
-                let that: BaseModel = this;
+                let that: ObjectModel = this;
                 let ref = that._children[propertyName];
                 if (ref)
                     return ref;
                 return that._model[propertyName];
             },
             set: function (value: any): void {
-                let that: BaseModel = this;
-                let old = that._model[propertyName];
-                if (old !== value || !that._initialized[propertyName]) {
-                    if (that._beforeChange(propertyName, old, value)) {
+                let that: ObjectModel = this;
+                let oldValue = that._model[propertyName];
+                if (oldValue !== value || !that._initialized[propertyName]) {
+                    const schema = that._schema.properties[propertyName];
+                    let bcRes = that._beforeChange(propertyName, schema, oldValue, value, !that._initialized[propertyName]);
+                    value = bcRes.value;
+                    that._initialized[propertyName] = true;
+                    if (bcRes.continue) {
                         that._model[propertyName] = value;
-                        let schema = that._schema.properties[propertyName];
-                        if (schemaUtils.isObject(schema)) {
-                            that._setRefChild(propertyName, old, value, {});
-                            that._notifyChanged(propertyName, old, value, "propchange", {}, true);
-                            that.notifyMetaDataChanged(propertyName, {});
-                        } else if (schemaUtils.isArrayOfObjects(schema)) {
-                            that._setListChild(propertyName, old, value, "propchange", {});
-                            that._notifyChanged(propertyName, old, value, "propchange", {}, true);
-                            that.notifyMetaDataChanged(propertyName, {});
-                        } else {
-                            that._notifyChanged(propertyName, old, value, "propchange", {}, true);
-                        }
+                        let rootSchema = obj.getRoot().$schema;
+                        if (schema.isObject(schema, rootSchema)) {
+                            that.replaceCompositionObject(propertyName, value);
+                            //notify 
+                            that.firePropChangedChanged(Message.PropChanged, propertyName, oldValue, value, { source: that._getPropertyPath(propertyName), instance: that });
+                        } else if (schema.isObject(schema, rootSchema) || schema.isArrayOfObjects(schema, rootSchema)) {
+                            let child = that._children[propertyName];
+                            if (child)
+                                child.setModel(value, true);
+                        } else
+                            that.firePropChangedChanged(Message.PropChanged, propertyName, oldValue, value, { source: that._getPropertyPath(propertyName), instance: that });
 
                     }
                 }
             },
             enumerable: true
         });
-    },    
-    private _initFromSchema() {
-        let that = this;
-        if (!that._model) return;
-
-        let states = (that._schema.states ? utils.extend(null, that._schema.states, true) : null),
-            links = (that._schema.links ? utils.extend(null, that._schema.links, true) : null),
-            errors = (that._schema.errors ? utils.extend(null, that._schema.errors, true) : null);
-        schema.enumProperties(that._schema, function (propertyName, item, isObject, isArray) {
-            _createProp(that, propertyName);
-            _createStateProp(that, propertyName, states ? states[propertyName] : null);
-            _createErrorProp(that, propertyName, errors ? errors[propertyName] : null);
-        });
-        if (that._schema.links) {
-            Object.keys(schema.links).forEach((name) => { _createStateLinks(that, name, links ? links[name] : null); });
-        }
-        // root error
-        if (!that._owner) {
-            that.$errors.$ = new _observable.Errors(that, '$', [], false);
-        }
     }
+    constructor(owner: any, propertyName: string, schema: any, value: any) {
+        super(owner, propertyName, schema, value);
 
+    }
+    public destroy() {
+        super.destroy();
+    }
 }
 
-        /*
-                export class Model extends BaseModel {
-                    private _addMeta: boolean;
-                    private _actions: any;
-                    private _meta: any;
-                    private _model: any;
-                    private _associations: any;
-                    private _objectMeta: MetaProperty;
-                    private _schema: any;
-                    public IsObject: boolean = true;
-        
-                    constructor(owner: any, propertyName: string, schema: any, value) {
-                        let that = this;
-                        that._owner = owner;
-                        that._propertyName = propertyName;
-                        that._schema = schema;
-                        // take the object state from parent
-                        that._metaInParent = that._owner && that._owner.isObject;
-        
-                        if (that._metaInParent) {
-                            that._objectMeta = that._owner.$[propertyName];
-                        } else {
-                            //	that._objectMeta = new value = that._checkValue(value)
-         
-                        }
-                    }
-                    private _checkValue(value: any): any {
-                        let that = this;
-                        that.isNull = value === null;
-                        that.isUndefined = value === undefined;
-                        value = value || {};
-                        value.$ = value.$ || {};
-                        return value;
-                    }
-        
-                    destroy() {
-                        let that = this;
-                        if (!that._metaInParent) {
-                            if (that._objectMeta) {
-                                that._objectMeta.destroy();
-                            }
-                        }
-                        that._objectMeta = null;
-                        that._owner = null;
-        
-                    }
-                    public get $(): any {
-                        return this._meta;
-                    }
-                    public get $actions(): any {
-                        return this._actions;
-                    }
-        
-                    private _freeze(cb: () => void) {
-                        let that = this;
-                        let ofv = that.frozen;
-                        that.frozen = true;
-                        try {
-                            cb();
-                        } finally {
-                            that.frozen = ofv;
-                        }
-                    }
-                    private _initFromSchema(schema) {
-                        let that = this;
-                        if (!that._model) return;
-                        let states = (schema.states ? _utils.extend(null, schema.states) : null),
-                            links = (schema.links ? $.extend(true, {}, schema.links) : null),
-                            errors = (schema.errors ? $.extend(true, {}, schema.errors) : null);
-                        _schema.enumProperties(that._schema, function(propertyName, item, isObject, isArray) {
-                            _createProp(that, propertyName);
-                            _createStateProp(that, propertyName, states ? states[propertyName] : null);
-                            _createErrorProp(that, propertyName, errors ? errors[propertyName] : null);
-                        });
-                        if (schema.links) {
-                            Object.keys(schema.links).forEach((name) => { _createStateLinks(that, name, links ? links[name] : null); });
-                        }
-                        // root error
-                        if (!that._owner) {
-                            that.$errors.$ = new _observable.Errors(that, '$', [], false);
-                        }
-                    }
-        
-                    private _init(value: any) {
-                        let that = this;
-                        that.isNullOrUndefined = value === null || value === undefined;
-                        value = value || {};
-                        value.$ = value.$ || {};
-        
-                        if (that._addMeta) {
-                            if (that.isNullOrUndefined)
-                                if (that._meta) that._meta.destroy();
-                            that._meta = new MetaProperty(that, that._propertyName, value.$);
-                        }
-                        _schema.enumProperties(that._schema, function(propertyName, item, isObject, isArray) {
-                            let val = value[propertyName];
-                            if (isArray && !val) {
-                                val = [];
-                                value[propertyName] = val;
-                            }
-                            if (isObject) {
-        
-                            } else if (isArray) {
-        
-                            }
-        
-                        });
-                        that._model = value;
-        
-                    }
-                    /*
-                                _setModel(value, frozen) {
-                                    let that = this;
-                                    let ofv = that.frozen;
-                                    if (frozen) that.frozen = true;
-                                    that.isNull = value === null;
-                                    that.isUndefined = value === undefined;
-                                    value = value || {};
-                                    value.$states = value.$states || {};
-                                    value.$links = value.$links || {};
-                                    value.$errors = value.$errors || {};
-                                    let props = Object.keys(that._schema.properties);
-                                	
-                                    //for each property set value && state
-                                    props.forEach(function(name) {
-                                        let si = that._schema.properties[name];
-                                        if (!_su.inModel(si)) return;
-                                        let val = value[name];
-                                        if (!val && _su.isCompositionList(si)) {
-                                            val = [];
-                                            value[name] = val
-                                        }
-                                        that[name] = val;
-                                        if (value.$states && value.$states[name]) {
-                                            let ss = value.$states[name];
-                                            Object.keys(ss).forEach((sn) => { that.$states[name][sn] = ss[sn]; });
-                                        }
-                                        value.$states[name] = that.$states[name].state();
-                	
-                                        if (value.$errors && value.$errors[name]) {
-                                            let errors = value.$errors[name];
-                                            let ne = [];
-                                            errors.forEach((err) => { ne.push(err) });
-                                            that.$errors[name].addErrors(ne);
-                                        }
-                                        value.$errors[name] = that.$errors[name].errors();
-                	
-                                    });
-                                    //for each link set state
-                                    if (that._model.$links) {
-                                        props = Object.keys(that._schema.links || {})
-                                        props.forEach(function(name) {
-                                            let ss = that._model.$links[name];
-                                            if (ss) {
-                                                Object.keys(ss).forEach((sn) => { that.$links[sn] = ss[sn]; });
-                                            }
-                                            value.$links[name] = that.$links[name].state();
-                                        });
-                                    }
-                                    that._model = value;
-                                    that.frozen = ofv;
-                                } */
 
-        // }
-
-
-
-
-
-
-/*
-OB
-
-*/
