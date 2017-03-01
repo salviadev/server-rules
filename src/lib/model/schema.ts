@@ -3,6 +3,7 @@ export const enumProperties = _enumProps;
 export const isObject = _isObject;
 export const isArrayOfObjects = _isArrayOfObjects;
 export const expandRefProp = _expandRefProp;
+export const initFromSchema =  _initFromSchema;
 
 
 const DEF_LINK = '#/definitions/';
@@ -17,12 +18,6 @@ var
 			return refSchema;
 		}
 		return schema;
-	},
-	_isRefObject = function (prop: any, rootSchema: any): boolean {
-		return prop.type === 'ref/object';
-	},
-	_isRefArray = function (prop: any, rootSchema: any): boolean {
-		return prop.type === 'ref/array';
 	},
 	_ignore = function (prop: any, rootSchema: any): boolean {
 		return ['ref/array', 'ref/object'].indexOf(prop.type) >= 0;
@@ -49,6 +44,9 @@ var
 			if (_ignore(item, rootSchema)) return;
 			cb(propName, item, _isObject(item, rootSchema), _isArray(item, rootSchema));
 		});
+
+	},
+	_initFromSchema = function(schema: any, rootSchema: any, value: any):void {
 
 	};
 

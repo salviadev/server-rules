@@ -138,8 +138,7 @@ export class BaseModel implements ModelObject {
         that._initialized = {};
         that._states = {};
         that._errors = {};
-        //create properties
-        that._createProperties();
+        that.setModel(value, false);
     }
     public destroy() {
         let that = this;
@@ -197,6 +196,38 @@ export class ArrayModel extends BaseModel {
         if (notify)
             that.firePropChangedChanged(Message.PropChanged, '', null, null, { source: that._getPropertyPath(), instance: that });
     }
+    public push(modelItem: any): ObjectModel {
+        let that = this;
+        let root = that.getRoot();
+        let item = new ObjectModel(that, '$item', schema.expandRefProp(that.$schema, root.$schema), modelItem);
+        that._model.push(modelItem);
+        that._items.push(item);
+        that.firePropChangedChanged(Message.AddItem, '', null, null, { source: that._getPropertyPath(), instance: that, item: item });
+        return item;
+    }
+    public pop(): void {
+        let that = this;
+        let root = that.getRoot();
+        that._model.pop();
+        let item = that._items.pop();
+        that.firePropChangedChanged(Message.RemoveItem, '', null, null, { source: that._getPropertyPath(), instance: that, item: item });
+        item.destroy();
+    }
+    public insert(index: number, modelItem: any): ObjectModel {
+        let that = this;
+        let root = that.getRoot();
+        let item = new ObjectModel(that, '$item', schema.expandRefProp(that.$schema, root.$schema), modelItem);
+        if (index >= 0 && index < (that._model.length - 1)) {
+            that._model.splice(index, 0, modelItem);
+            that._items.splice(index, 0, item);
+        } else {
+            that._model.push(modelItem);
+            that._items.push(item);
+        }
+        that._items.push(item);
+        that.firePropChangedChanged(Message.AddItem, '', null, null, { source: that._getPropertyPath(), instance: that, item: item });
+        return item;
+    }
 
 }
 
@@ -212,10 +243,10 @@ export class ObjectModel extends BaseModel {
                 if (!forceContinue && oldValue === res.value)
                     res.continue = false;
             }
-
         }
         return res;
     }
+
     protected replaceCompositionObject(propertyName: string, value: any): void {
         let that = this;
         if (that._children[propertyName]) {
@@ -241,18 +272,17 @@ export class ObjectModel extends BaseModel {
                 let that: ObjectModel = this;
                 let oldValue = that._model[propertyName];
                 if (oldValue !== value || !that._initialized[propertyName]) {
-                    const schema = that._schema.properties[propertyName];
-                    let bcRes = that._beforeChange(propertyName, schema, oldValue, value, !that._initialized[propertyName]);
+                    const cschema = that._schema.properties[propertyName];
+                    let bcRes = that._beforeChange(propertyName, cschema, oldValue, value, !that._initialized[propertyName]);
                     value = bcRes.value;
                     that._initialized[propertyName] = true;
                     if (bcRes.continue) {
                         that._model[propertyName] = value;
                         let rootSchema = obj.getRoot().$schema;
-                        if (schema.isObject(schema, rootSchema)) {
+                        if (schema.isObject(cschema, rootSchema)) {
                             that.replaceCompositionObject(propertyName, value);
-                            //notify 
                             that.firePropChangedChanged(Message.PropChanged, propertyName, oldValue, value, { source: that._getPropertyPath(propertyName), instance: that });
-                        } else if (schema.isObject(schema, rootSchema) || schema.isArrayOfObjects(schema, rootSchema)) {
+                        } else if (schema.isArrayOfObjects(cschema, rootSchema)) {
                             let child = that._children[propertyName];
                             if (child)
                                 child.setModel(value, true);
@@ -264,6 +294,26 @@ export class ObjectModel extends BaseModel {
             },
             enumerable: true
         });
+    }
+
+    protected afterSetModel(notify: boolean): void {
+        let that = this;
+         let rootSchema = that.getRoot().$schema;
+        if (that._model && that._model.$create) {
+            schema.initFromSchema(that.$schema, rootSchema,  that._model);
+            delete that._model.$create;
+        }
+       
+        schema.enumProperties(that._schema, rootSchema, function (propertyName: string, cschema: any, isObject: boolean, isArray: boolean) {
+            that._createProperty(propertyName);
+            if (schema.isObject(cschema, rootSchema)) {
+                if (that._model[propertyName])
+                    that._children[propertyName] = new ObjectModel(that, propertyName, cschema, that._model[propertyName]);
+            } else if (schema.isArrayOfObjects(cschema, rootSchema)) {
+                that._children[propertyName] = new ArrayModel(that, propertyName, cschema, that._model[propertyName]);
+            }
+        });
+
     }
     constructor(owner: any, propertyName: string, schema: any, value: any) {
         super(owner, propertyName, schema, value);
