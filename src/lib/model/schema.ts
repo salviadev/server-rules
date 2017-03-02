@@ -1,9 +1,31 @@
+export const JSONTYPES: any = {
+	string: 'string',
+	integer: 'integer',
+	boolean: 'boolean',
+	number: 'number',
+	object: 'object',
+	array: 'array',
+	// extended
+	date: 'date',
+	datetime: 'date-time'
+}
+
+export const JSONFORMATS = {
+	email: 'email',
+	json: 'json',
+	money: 'money',
+	code: 'code',
+	rate: 'rate'
+}
+
 
 export const enumProperties = _enumProps;
 export const isObject = _isObject;
 export const isArrayOfObjects = _isArrayOfObjects;
 export const expandRefProp = _expandRefProp;
-export const initFromSchema =  _initFromSchema;
+export const initFromSchema = _initFromSchema;
+export const typeOfProperty = _typeOfProperty;
+
 
 
 const DEF_LINK = '#/definitions/';
@@ -46,7 +68,66 @@ var
 		});
 
 	},
-	_initFromSchema = function(schema: any, rootSchema: any, value: any):void {
+	_getDefault = function (vDefault: any): any {
+		return vDefault;
+
+	},
+	_typeOfProperty = function (propSchema: { type?: string, format?: string, reference?: string }): string {
+		let ps = propSchema.type || JSONTYPES.string;
+		if (!JSONTYPES[ps])
+			throw 'Unsupported schema type : ' + propSchema.type;
+		if (propSchema.format) {
+			if (ps === JSONTYPES.string) {
+				if (propSchema.format === JSONTYPES.date)
+					return JSONTYPES.date;
+				else if (propSchema.format === JSONTYPES.datetime)
+					return JSONTYPES.datetime;
+				else if (propSchema.format === JSONTYPES.id)
+					return JSONTYPES.id;
+			} else if (ps === JSONTYPES.integer) {
+				if (propSchema.format === JSONTYPES.id)
+					return JSONTYPES.id;
+
+			}
+		}
+		return ps;
+	},
+	_initFromSchema = function (schema: any, rootSchema: any, value: any): void {
+		value.$states = value.$states || {};
+		Object.keys(schema.properties).forEach(function (pn) {
+			let cs = schema.properties[pn];
+			if (!_ignore(cs, rootSchema)) return;
+			let state = schema.states ? schema.states[pn] : null;
+			let ns = value.$states[pn] = (value.$states[pn] || {});
+			if (state) {
+				Object.keys(state).forEach(function (sn) {
+					if (ns[sn] === undefined) {
+						ns[sn] = state[sn];
+					}
+				});
+			}
+			if (_isObject(cs, rootSchema)) {
+				value[pn] = value[pn] || {};
+				_initFromSchema(cs, rootSchema, value[pn]);
+			} else if (_isArrayOfObjects(cs, rootSchema)) {
+			} else {
+				if (value[pn] === undefined) {
+					if (cs.default !== undefined && cs.default !== null)
+						value[pn] = _getDefault(cs.default);
+					else if (cs.enum)
+						value[pn] = cs.enum[0];
+					else {
+						switch (_typeOfProperty(cs.type)) {
+							case JSONTYPES.number:
+							case JSONTYPES.integer:
+								if (cs.default !== null)
+									value[pn] = 0;
+								break;
+						}
+					}
+				}
+			}
+		});
 
 	};
 

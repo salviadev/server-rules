@@ -22,6 +22,6 @@
   },
   "types": "./definitions/index.d.ts",
   "scripts": {
-    "test": "mocha --compilers ts:ts-node/register test/**/*.test.ts"
+    "test": "mocha --compilers ts:ts-node/register test/**/*.specs.ts"
   }
 }
