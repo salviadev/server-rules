@@ -1,5 +1,5 @@
 import * as utils from '../core/utils';
-import * as schema from './schema';
+import * as schemaUtils from './schema';
 import * as modelHelper from './helper';
 import { Message } from './consts';
 import { ModelObject } from './interfaces';
@@ -7,7 +7,7 @@ import { ModelObject } from './interfaces';
 export class BaseModel implements ModelObject {
 
     private _cachePath: string;
-    private _cacheRoot: BaseModel;
+    private _cacheRoot: ModelObject;
 
     protected _initialized: any;
     //is null ?
@@ -19,7 +19,7 @@ export class BaseModel implements ModelObject {
     // if frozen not fire events
     protected _frozen: boolean;
     // parent
-    protected _owner: any;
+    protected _owner: ModelObject;
     // schema
     protected _schema: any;
     // model
@@ -44,7 +44,7 @@ export class BaseModel implements ModelObject {
     // for items of an array (one-to-many) _propertyName === '$item' 
     protected _propertyName: string;
 
-    protected getRoot(): BaseModel {
+    public getRoot(): ModelObject {
         let that = this;
         if (!that._cacheRoot) {
             if (that._owner)
@@ -53,7 +53,7 @@ export class BaseModel implements ModelObject {
                 that._cacheRoot = that;
 
         }
-        return that._cacheRoot;
+        return <BaseModel>that._cacheRoot;
     }
     protected _getPropertyPath(propertyName?: string) {
         let that = this;
@@ -77,7 +77,7 @@ export class BaseModel implements ModelObject {
     protected replaceCompositionObject(propertyName: string, value: any): void {
     }
 
-    protected getFullPath(): string {
+    public getFullPath(): string {
         let that = this;
         if (that._cachePath === undefined) {
             let segments: string[] = [];
@@ -95,7 +95,7 @@ export class BaseModel implements ModelObject {
 
     public isArray(): boolean {
         let that = this;
-        return schema.isArrayOfObjects(that._schema, that.getRoot()._schema);
+        return schemaUtils.isArrayOfObjects(that._schema, that.getRoot().$schema);
     }
 
     public get owner(): ModelObject {
@@ -106,6 +106,11 @@ export class BaseModel implements ModelObject {
 
 
     public firePropChangedChanged(operation: number, propertyName: string, oldvalue: any, newValue: any, params: any): void {
+    }
+
+    public model() {
+        return this._model;
+
     }
     public fireMetaDataChanged(propertyName: string, params: any): void {
         let that = this, parent = that.owner;

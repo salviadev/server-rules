@@ -1,10 +1,4 @@
 
-export var extend = _extend;
-export var uuid = _genUuid;
-export var allocId = _createID;
-export var equals = _equals;
-
-
 var
     _copyArray = function (src: any[], recursive: boolean): any[] {
         let res = new Array(src.length);
@@ -100,6 +94,12 @@ var
     };
 
 
+
+
+export var extend = _extend;
+export var uuid = _genUuid;
+export var allocId = _createID;
+export var equals = _equals;
 
 
 

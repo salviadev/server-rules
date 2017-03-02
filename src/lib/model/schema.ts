@@ -19,12 +19,6 @@ export const JSONFORMATS = {
 }
 
 
-export const enumProperties = _enumProps;
-export const isObject = _isObject;
-export const isArrayOfObjects = _isArrayOfObjects;
-export const expandRefProp = _expandRefProp;
-export const initFromSchema = _initFromSchema;
-export const typeOfProperty = _typeOfProperty;
 
 
 
@@ -132,3 +126,11 @@ var
 	};
 
 
+
+export const enumProperties = _enumProps;
+export const isObject = _isObject;
+export const isArrayOfObjects = _isArrayOfObjects;
+export const expandRefProp = _expandRefProp;
+export const initFromSchema = _initFromSchema;
+export const typeOfProperty = _typeOfProperty;
+export const isNumber = _isNumber;

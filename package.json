@@ -13,6 +13,7 @@
     "gulp-typescript": "latest",
     "merge2": "latest",
     "mocha": "latest",
+    "run-sequence": "latest",
     "ts-node": "latest",
     "typescript": "2.x.x"
   },
@@ -22,6 +23,6 @@
   },
   "types": "./definitions/index.d.ts",
   "scripts": {
-    "test": "mocha --compilers ts:ts-node/register test/**/*.specs.ts"
+    "test": "mocha test/**/*.specs.js"
   }
 }

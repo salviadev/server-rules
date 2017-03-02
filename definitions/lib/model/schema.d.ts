@@ -16,3 +16,4 @@ export declare const typeOfProperty: (propSchema: {
     format?: string;
     reference?: string;
 }) => string;
+export declare const isNumber: (prop: any) => boolean;

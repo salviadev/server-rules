@@ -7,7 +7,7 @@ export declare class BaseModel implements ModelObject {
     isUndefined: boolean;
     uuid: string;
     protected _frozen: boolean;
-    protected _owner: any;
+    protected _owner: ModelObject;
     protected _schema: any;
     protected _model: any;
     protected _children: any;
@@ -16,12 +16,12 @@ export declare class BaseModel implements ModelObject {
     readonly $states: any;
     readonly $schema: any;
     protected _propertyName: string;
-    protected getRoot(): BaseModel;
+    getRoot(): ModelObject;
     protected _getPropertyPath(propertyName?: string): string;
     protected setModel(value: any, notify: boolean): void;
     protected afterSetModel(notify: boolean): void;
     protected replaceCompositionObject(propertyName: string, value: any): void;
-    protected getFullPath(): string;
+    getFullPath(): string;
     protected _createProperties(): void;
     isArray(): boolean;
     readonly owner: ModelObject;
@@ -30,6 +30,7 @@ export declare class BaseModel implements ModelObject {
         severity?: number;
     }[], add?: boolean): void;
     firePropChangedChanged(operation: number, propertyName: string, oldvalue: any, newValue: any, params: any): void;
+    model(): any;
     fireMetaDataChanged(propertyName: string, params: any): void;
     onStateChange: (propertyName: string, params: any) => void;
     onChange: (propertyName: string, operation: string, params: any) => void;
