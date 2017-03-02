@@ -10,8 +10,6 @@ export class BaseModel implements ModelObject {
     private _cacheRoot: BaseModel;
 
     protected _initialized: any;
-    // no notifications
-    protected _frozen: boolean;
     //is null ?
     public isNull: boolean;
     // is undefined ?

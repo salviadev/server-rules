@@ -9,6 +9,7 @@ import { ArrayModel } from './array';
 
 
 export class ObjectModel extends BaseModel {
+    private _className: string;
     private _beforeChange(propertyName: string, schema: any, oldValue: any, value: any, forceContinue: boolean): { continue: boolean, value: any } {
         let that = this;
         let res = { continue: true, value: value }
@@ -92,7 +93,8 @@ export class ObjectModel extends BaseModel {
     }
     constructor(owner: any, propertyName: string, schema: any, value: any) {
         super(owner, propertyName, schema, value);
-
+        let that = this;
+        that._className = schema.name;
     }
     public destroy() {
         super.destroy();
