@@ -1,3 +1,4 @@
+import { currentLocale } from '../localisation/locale'
 export const JSONTYPES: any = {
 	string: 'string',
 	integer: 'integer',
@@ -39,18 +40,21 @@ var
 		return ['ref/array', 'ref/object'].indexOf(prop.type) >= 0;
 	},
 	_isObject = function (prop: any, rootSchema: any): boolean {
-		return prop.type === 'object';
+		return prop.type === JSONTYPES.object;
 	},
 	_isArray = function (prop: any, rootSchema: any): boolean {
-		return prop.type === 'array';
+		return prop.type === JSONTYPES.array;
 	},
 	_isNumber = function (prop: any, ): boolean {
-		return prop.type === 'integer' || prop.type === 'number';
+		return prop.type === JSONTYPES.number || prop.type === JSONTYPES.integer;
+	},
+	_isInteger = function (prop: any, ): boolean {
+		return prop.type === JSONTYPES.integer;
 	},
 	_isArrayOfObjects = function (prop: any, rootSchema: any): boolean {
-		if (prop.type === 'array') {
+		if (prop.type === JSONTYPES.array) {
 			let pitems = _expandRefProp(prop.items, rootSchema);
-			return pitems.type === 'object'
+			return pitems.type === JSONTYPES.object
 		} else
 			return false;
 	},
@@ -86,37 +90,92 @@ var
 		}
 		return ps;
 	},
-	_initFromSchema = function (schema: any, rootSchema: any, value: any): void {
+	_initializeSchemaState = function (schema: any, roolSchema: any, schemaStates: any) {
+		let pt = _typeOfProperty(schema);
+		switch (pt) {
+			case JSONTYPES.integer:
+				schema.decimals = 0;
+				break;
+			case JSONTYPES.number:
+				if (schema.format === JSONFORMATS.rate) {
+					if (schema.decimals === undefined) schema.decimals = 2;
+					if (schema.minimum === undefined) schema.minimum = 0;
+					if (schema.maximum === undefined) schema.maximum = 100;
+					if (schema.symbol === undefined) schema.symbol = '%';
+				} else if (schema.format === JSONFORMATS.money) {
+					if (schema.decimals === undefined) schema.decimals = currentLocale.number.decimalPlaces;
+					if (schema.symbol === undefined) schema.symbol = currentLocale.number.symbol;
+				}
+				break;
+			case JSONTYPES.string:
+				if (schema.maxLength === undefined) schemaStates.maxLength = 2;
+				if (schema.minLength === undefined) schemaStates.minLength = 2;
+
+				break;
+
+		}
+		if (_isNumber(schema)) {
+			if (schema.minimum !== undefined)
+				schemaStates.minimum = schema.minimum;
+			if (schema.maximum !== undefined)
+				schemaStates.maximum = schema.maximum;
+			if (schema.exclusiveMaximum !== undefined)
+				schemaStates.exclusiveMaximum = schema.exclusiveMaximum;
+			if (schema.exclusiveMinimum !== undefined)
+				schemaStates.exclusiveMinimum = schema.exclusiveMinimum;
+			if (schema.decimals !== undefined)
+				schemaStates.decimals = schema.decimals;
+			if (schema.symbol !== undefined)
+				schemaStates.symbol = schema.symbol;
+		}
+
+
+	},
+	_initFromSchema = function (schema: any, rootSchema: any, value: any, isCreate: boolean): void {
 		value.$states = value.$states || {};
 		Object.keys(schema.properties).forEach(function (pn) {
 			let cs = schema.properties[pn];
-			if (!_ignore(cs, rootSchema)) return;
-			let state = schema.states ? schema.states[pn] : null;
-			let ns = value.$states[pn] = (value.$states[pn] || {});
-			if (state) {
-				Object.keys(state).forEach(function (sn) {
-					if (ns[sn] === undefined) {
-						ns[sn] = state[sn];
-					}
-				});
+			if (_ignore(cs, rootSchema)) return;
+			let state = schema.states[pn] = schema.states[pn] || {};
+			let ns = value.$states[pn] = value.$states[pn] || {};
+			if (!state._initialized) {
+				_initializeSchemaState(cs, rootSchema, state);
+				state._initialized = true;
 			}
+
+			Object.keys(state).forEach(function (sn) {
+				if (ns[sn] === undefined) {
+					ns[sn] = state[sn];
+				}
+			});
 			if (_isObject(cs, rootSchema)) {
-				value[pn] = value[pn] || {};
-				_initFromSchema(cs, rootSchema, value[pn]);
+				value[pn] = value[pn] || (isCreate ? {} : null);
+				if (value[pn])
+					_initFromSchema(cs, rootSchema, value[pn], isCreate);
 			} else if (_isArrayOfObjects(cs, rootSchema)) {
+				value[pn] = value[pn] || (isCreate ? [] : null);
+				if (value[pn] && value[pn].length) {
+					let itemsSchema = _expandRefProp(cs.items, rootSchema);
+					value[pn].forEach((ii: any) => {
+						_initFromSchema(itemsSchema, rootSchema, ii, isCreate);
+					});
+				}
 			} else {
-				if (value[pn] === undefined) {
-					if (cs.default !== undefined && cs.default !== null)
-						value[pn] = _getDefault(cs.default);
-					else if (cs.enum)
-						value[pn] = cs.enum[0];
-					else {
-						switch (_typeOfProperty(cs.type)) {
-							case JSONTYPES.number:
-							case JSONTYPES.integer:
-								if (cs.default !== null)
-									value[pn] = 0;
-								break;
+				if (isCreate) {
+					// in creaate mode load default values
+					if (value[pn] === undefined) {
+						if (cs.default !== undefined && cs.default !== null)
+							value[pn] = _getDefault(cs.default);
+						else if (cs.enum)
+							value[pn] = cs.enum[0];
+						else {
+							switch (_typeOfProperty(cs)) {
+								case JSONTYPES.number:
+								case JSONTYPES.integer:
+									if (cs.default !== null)
+										value[pn] = 0;
+									break;
+							}
 						}
 					}
 				}
@@ -124,8 +183,6 @@ var
 		});
 
 	};
-
-
 
 export const enumProperties = _enumProps;
 export const isObject = _isObject;

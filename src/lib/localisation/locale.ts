@@ -3,7 +3,7 @@ const
         number: {
             decimalSep: ',',
             thousandSep: ' ',
-            decimal: 2,
+            decimalPlaces: 2,
             symbol: '€',
             format: '%v %s'
         },
@@ -26,7 +26,7 @@ const
         number: {
             decimalSep: '.',
             thousandSep: ' ',
-            decimal: 2,
+            decimalPlaces: 2,
             symbol: '$',
             format: '%s %v'
         },
@@ -50,6 +50,8 @@ export var supportedLocale: any = {
     en_US: en_US,
     fr_FR: fr_FR
 }
+
+export var currentLocale = supportedLocale.fr_FR;
 
 
 

@@ -73,6 +73,9 @@ export class BaseModel implements ModelObject {
         that.afterSetModel(notify);
     }
     protected afterSetModel(notify: boolean): void {
+        let that = this;
+        if (that._model.$states)
+            that._states = that._model.$states;
     }
     protected replaceCompositionObject(propertyName: string, value: any): void {
     }
@@ -151,7 +154,6 @@ export class BaseModel implements ModelObject {
             that._children = null;
         }
         if (that._states) {
-            modelHelper.destroyObject(that._states);
             that._states = null;
         }
         if (that._errors) {

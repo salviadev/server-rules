@@ -74,10 +74,10 @@ export class ObjectModel extends BaseModel {
     protected afterSetModel(notify: boolean): void {
         let that = this;
         let rootSchema = that.getRoot().$schema;
-        if (that._model && that._model.$create) {
-            schemaUtils.initFromSchema(that._schema, rootSchema, that._model);
-            delete that._model.$create;
+        if (that._model) {
+            schemaUtils.initFromSchema(that._schema, rootSchema, that._model, that._model.$create);
         }
+        delete that._model.$create;
 
         schemaUtils.enumProperties(that._schema, rootSchema, function (propertyName: string, cschema: any, isObject: boolean, isArray: boolean) {
             that._createProperty(propertyName);
@@ -88,6 +88,9 @@ export class ObjectModel extends BaseModel {
                 that._children[propertyName] = new ArrayModel(that, propertyName, cschema, that._model[propertyName]);
             }
         });
+        if (that._model.$states)
+            that._states = that._model.$states;
+
 
     }
     constructor(owner: any, propertyName: string, schema: any, value: any) {
