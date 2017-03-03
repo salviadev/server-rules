@@ -34,6 +34,9 @@ export class Errors {
             that.notify();
         }
     }
+    public clearErrors() {
+        this.clear(true);
+    }
     public clear(notify: boolean): boolean {
         var that = this;
         if (that._errors.length) {

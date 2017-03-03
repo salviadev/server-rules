@@ -15,6 +15,7 @@ export declare class Errors {
     destroy(): void;
     private notify();
     private _addErrors(alerts, add?);
+    clearErrors(): void;
     clear(notify: boolean): boolean;
     hasErrors(): boolean;
     addError(message: string): void;

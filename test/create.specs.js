@@ -153,4 +153,20 @@ describe('Proxy create', () => {
         lf.tauxTVA = 20.333;
         assert.equal(lf.tauxTVA, 20.333, 'Decimals round after decimals changed');
     });
+    it('Test errors', function () {
+        let facture = new index_1.ObjectModel(null, '', schemaFacture, { $create: true, lignes: [{}, {}] });
+        let lf = facture.lignes.get(0);
+        lf.$errors.tauxTVA.addError('Test Error');
+        assert.equal(lf.$errors.tauxTVA.hasErrors(), true, 'Has error');
+        facture.clearErrors();
+        assert.equal(lf.$errors.tauxTVA.hasErrors(), false, 'No errors');
+        lf.$errors.tauxTVA.addError('Test Error');
+        assert.equal(lf.$errors.tauxTVA.hasErrors(), true, 'Has error (2)');
+        lf.$errors.tauxTVA.rmvError('Test Error');
+        assert.equal(lf.$errors.tauxTVA.hasErrors(), false, 'No errors (2)');
+        lf.tauxTVA = 101;
+        assert.equal(lf.$errors.tauxTVA.hasErrors(), true, 'TauxTva is greater than 100');
+        lf.tauxTVA = 99;
+        assert.equal(lf.$errors.tauxTVA.hasErrors(), false, 'TauxTva is less than 100');
+    });
 });

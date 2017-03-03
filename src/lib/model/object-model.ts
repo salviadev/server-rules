@@ -111,9 +111,9 @@ export class ObjectModel extends BaseModel {
     }
     public addError(message: string): void {
         let that = this;
-        if (that.$errors.$) 
+        if (that.$errors.$)
             that.$errors.$.addError(message);
-        else if (that._owner) 
+        else if (that._owner)
             that._owner.addError(message);
     }
     public rmvError(message: string): void {
