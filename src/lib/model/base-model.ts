@@ -32,6 +32,11 @@ export class BaseModel implements ModelObject {
     protected _errors: any;
 
     //states
+    public get $errors() {
+        return this._errors;
+    }
+
+    //states
     public get $states() {
         return this._states;
     }
@@ -77,8 +82,7 @@ export class BaseModel implements ModelObject {
         if (that._model.$states)
             that._states = that._model.$states;
     }
-    protected replaceCompositionObject(propertyName: string, value: any): void {
-    }
+    protected replaceCompositionObject(propertyName: string, value: any): void { }
 
     public getFullPath(): string {
         let that = this;
@@ -92,9 +96,7 @@ export class BaseModel implements ModelObject {
         }
         return that._cachePath;
     }
-    protected _createProperties() {
-
-    }
+    protected _createProperties() { }
 
     public isArray(): boolean {
         let that = this;
@@ -104,8 +106,10 @@ export class BaseModel implements ModelObject {
     public get owner(): ModelObject {
         return <ModelObject>this._owner;
     }
-    public addErrors(alerts: { message: string, severity?: number }[], add?: boolean): void {
-    }
+    public addError(message: string): void {}
+    public rmvError(message: string): void {}
+    public clearErrors(): void {}
+
 
 
     public firePropChangedChanged(operation: number, propertyName: string, oldvalue: any, newValue: any, params: any): void {

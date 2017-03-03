@@ -13,6 +13,7 @@ export declare class BaseModel implements ModelObject {
     protected _children: any;
     protected _states: any;
     protected _errors: any;
+    readonly $errors: any;
     readonly $states: any;
     readonly $schema: any;
     protected _propertyName: string;
@@ -25,10 +26,9 @@ export declare class BaseModel implements ModelObject {
     protected _createProperties(): void;
     isArray(): boolean;
     readonly owner: ModelObject;
-    addErrors(alerts: {
-        message: string;
-        severity?: number;
-    }[], add?: boolean): void;
+    addError(message: string): void;
+    rmvError(message: string): void;
+    clearErrors(): void;
     firePropChangedChanged(operation: number, propertyName: string, oldvalue: any, newValue: any, params: any): void;
     model(): any;
     fireMetaDataChanged(propertyName: string, params: any): void;

@@ -5,8 +5,7 @@ export const destroyObject = _destroyObject;
 
 
 var
-
-    _destroyObject = (obj: any): void => {
+   _destroyObject = (obj: any): void => {
         if (obj) {
             Object.keys(obj).forEach((ii: any) => {
                 ii.destroy();

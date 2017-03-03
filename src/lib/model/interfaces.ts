@@ -6,9 +6,12 @@ export interface ModelObject {
     model(): any;
     getRoot(): ModelObject;
     getFullPath(): string;
-    addErrors(alerts: { message: string, severity?: number }[], add?: boolean): void;
+    addError(message: string): void;
+    rmvError(message: string): void;
+    clearErrors(): void;
     fireMetaDataChanged(propertyName: string, params: any): void;
     readonly $schema: any;
+    readonly $errors: any;
 }
 
 

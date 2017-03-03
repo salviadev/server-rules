@@ -81,5 +81,19 @@ export class ArrayModel extends BaseModel {
         that.firePropChangedChanged(Message.AddItem, '', null, null, { source: that._getPropertyPath(), instance: that, item: item });
         return item;
     }
+    public addError(message: string): void {
+        let that = this;
+        that._owner.$errors[that._propertyName].addError(message);
+    }
+    public rmvError(message: string): void {
+        let that = this;
+        that._owner.$errors[that._propertyName].rmvError(message);
+    }
+    public clearErrors(): void {
+        let that = this;
+        that._owner.$errors[that._propertyName].clearErrors();
+        that._items.forEach(item => item.clearErrors());
+    }
+
 
 }

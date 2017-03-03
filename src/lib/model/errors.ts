@@ -52,6 +52,7 @@ export class Errors {
         let that = this;
         that._addErrors([{ severity: AlertType.Error, message: message }], true);
     }
+    
     public addSuccess(message: string) {
         let that = this;
         that._addErrors([{ severity: AlertType.Success, message: message }], true);

@@ -11,4 +11,7 @@ export declare class ArrayModel extends BaseModel {
     get(index: number): ObjectModel;
     readonly length: number;
     insert(index: number, modelItem: any): ObjectModel;
+    addError(message: string): void;
+    rmvError(message: string): void;
+    clearErrors(): void;
 }

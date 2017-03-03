@@ -1,6 +1,7 @@
 import * as utils from '../core/utils';
 import * as schemaUtils from './schema';
 import { Message } from './consts';
+import { Errors } from './errors';
 import { ModelObject } from './interfaces';
 import { BaseModel } from './base-model';
 import { ArrayModel } from './array-model';
@@ -32,9 +33,15 @@ export class ObjectModel extends BaseModel {
         if (value)
             that._children[propertyName] = new ObjectModel(that, propertyName, that._schema.properties[propertyName], value);
     }
-
+    private _createErrorProperty(propertyName: string) {
+        let that = this;
+        that._errors[propertyName] = new Errors(that, propertyName, null);
+    }
     private _createProperty(propertyName: string): void {
         let obj = this;
+        let cs = obj._schema.properties[propertyName];
+        if (cs.type !== schemaUtils.JSONTYPES.object)
+            obj._createErrorProperty(propertyName);
         Object.defineProperty(obj, propertyName, {
             get: function (): any {
                 let that: ObjectModel = this;
@@ -90,9 +97,10 @@ export class ObjectModel extends BaseModel {
         });
         if (that._model.$states)
             that._states = that._model.$states;
-
-
+        if (!that._owner || (that._owner && that._owner.isArray()))
+            that._createErrorProperty('$');
     }
+
     constructor(owner: any, propertyName: string, schema: any, value: any) {
         super(owner, propertyName, schema, value);
         let that = this;
@@ -101,6 +109,30 @@ export class ObjectModel extends BaseModel {
     public destroy() {
         super.destroy();
     }
+    public addError(message: string): void {
+        let that = this;
+        if (that.$errors.$) 
+            that.$errors.$.addError(message);
+        else if (that._owner) 
+            that._owner.addError(message);
+    }
+    public rmvError(message: string): void {
+        let that = this;
+        that._owner.$errors[that._propertyName].rmvError(message);
+    }
+    public clearErrors(): void {
+        let that = this;
+        Object.keys(that.$errors).forEach(pn => {
+            let ei = that.$errors[pn];
+            ei.clearErrors();
+        });
+        Object.keys(that._children).forEach(pn => {
+            let child = that._children[pn];
+            child.clearErrors();
+        });
+    }
+
+
 }
 
 

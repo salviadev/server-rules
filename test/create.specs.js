@@ -152,6 +152,5 @@ describe('Proxy create', () => {
         lf.$states.tauxTVA.decimals = 3;
         lf.tauxTVA = 20.333;
         assert.equal(lf.tauxTVA, 20.333, 'Decimals round after decimals changed');
-        console.log(facture.model());
     });
 });
