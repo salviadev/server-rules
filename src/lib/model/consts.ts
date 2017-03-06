@@ -1,5 +1,5 @@
 export const Message = {
     PropChanged: 0,
-    AddItem: 0,
-    RemoveItem: 0
+    AddItem: 1,
+    RemoveItem: 2
 }

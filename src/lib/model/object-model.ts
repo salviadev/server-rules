@@ -77,8 +77,9 @@ export class ObjectModel extends BaseModel {
             enumerable: true
         });
     }
-    protected _schemaValidate(operation: number, propertyName: string) {
+    protected _schemaValidate(operation: number, propertyName: string): boolean {
         let that = this;
+        let res = true;
         let errors = that.$errors[propertyName];
         if (errors) {
             let schema = that._schema.properties[propertyName];
@@ -88,10 +89,11 @@ export class ObjectModel extends BaseModel {
                     let obj: any = that;
                     let rootModel = that.getRoot();
                     let rootSchema = rootModel.$schema;
-                    schemaUtils.validateProperty(obj[propertyName], schema, rootSchema, state, errors);
+                    res = schemaUtils.validateProperty(obj[propertyName], schema, rootSchema, state, errors);
                 }
             }
         }
+        return res;
 
     }
 
@@ -105,7 +107,7 @@ export class ObjectModel extends BaseModel {
 
         }
         if (that._model) {
-            that._model.$create =  that._model.$create || that._owner.$create;
+            that._model.$create = that._model.$create || that._owner.$create;
             schemaUtils.initFromSchema(that._schema, rootSchema, that._model, that._model.$create);
             that._create = that._model.$create;
             delete that._model.$create;
@@ -148,7 +150,6 @@ export class ObjectModel extends BaseModel {
         else if (that._owner)
             that._owner.rmvError(message);
     }
-    
     public clearErrors(): void {
         let that = this;
         if (that.$errors) {
@@ -162,6 +163,21 @@ export class ObjectModel extends BaseModel {
             });
         }
     }
+    public validate(): boolean {
+        let that = this;
+        let res = super.validate();
+        Object.keys(that._children).forEach(pn => {
+            let child = that._children[pn];
+            if (!child.validate())
+                res = false;
+        });
+        Object.keys(that._schema.properties).forEach(propertyName => {
+            if (!that._schemaValidate(Message.PropChanged, propertyName))
+                res = false;
+        });
+        return res;
+    }
+
     protected _clearErrorsForProperty(propertyName: string): void {
         let that = this;
         if (that.$errors && that.$errors[propertyName]) {

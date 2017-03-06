@@ -114,5 +114,15 @@ export class ArrayModel extends BaseModel {
         that._items.forEach(item => item.clearErrors());
     }
 
+    public validate(): boolean {
+        let that = this;
+        let res = super.validate();
+        that._items.forEach(item => {
+            if (!item.validate()) res = false;
+        });
+        return res;
+    }
+
+
 
 }

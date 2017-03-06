@@ -228,10 +228,14 @@ describe('Proxy create', () => {
         order.lines = [{ codeItem: 'A' }, { codeItem: 'B' }];
         assert.equal(order.$errors.lines.hasErrors(), false, 'No errors for lines');
         oi = order.lines.push({ codeItem: 'A' });
-        assert.equal(order.$errors.lines.hasErrors(), true, 'Primary key violation');
+        assert.equal(order.$errors.lines.hasErrors(), true, '(1) Primary key violation');
+        assert.equal(order.validate(), false, 'Order in error');
+        assert.equal(order.$errors.lines.hasErrors(), true, '(2) Primary key violation');
+        
         oi = order.lines.get(0);
         order.lines.remove(oi);
         assert.equal(order.$errors.lines.hasErrors(), false, 'No errors for lines');
+        assert.equal(order.validate(), true, 'No errors ');
     });
 
 });

@@ -5,12 +5,13 @@ export declare class ObjectModel extends BaseModel {
     protected replaceCompositionObject(propertyName: string, value: any): void;
     private _createErrorProperty(propertyName);
     private _createProperty(propertyName);
-    protected _schemaValidate(operation: number, propertyName: string): void;
+    protected _schemaValidate(operation: number, propertyName: string): boolean;
     protected afterSetModel(notify: boolean): void;
     constructor(owner: any, propertyName: string, schema: any, value: any);
     destroy(): void;
     addError(message: string): void;
     rmvError(message: string): void;
     clearErrors(): void;
+    validate(): boolean;
     protected _clearErrorsForProperty(propertyName: string): void;
 }

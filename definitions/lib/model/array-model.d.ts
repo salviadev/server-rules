@@ -16,4 +16,5 @@ export declare class ArrayModel extends BaseModel {
     addError(message: string): void;
     rmvError(message: string): void;
     clearErrors(): void;
+    validate(): boolean;
 }

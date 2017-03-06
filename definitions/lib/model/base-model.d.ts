@@ -21,13 +21,14 @@ export declare class BaseModel implements ModelObject {
     protected _propertyName: string;
     getRoot(): ModelObject;
     protected _getPropertyPath(propertyName?: string): string;
+    validate(): boolean;
     protected setModel(value: any, notify: boolean): void;
     protected afterSetModel(notify: boolean): void;
     protected replaceCompositionObject(propertyName: string, value: any): void;
     getFullPath(): string;
     protected _createProperties(): void;
     protected _clearErrorsForProperty(propertyName: string): void;
-    protected _schemaValidate(operation: number, propertyName: string): void;
+    protected _schemaValidate(operation: number, propertyName: string): boolean;
     isArray(): boolean;
     readonly owner: ModelObject;
     addError(message: string): void;

@@ -72,6 +72,12 @@ export class BaseModel implements ModelObject {
         if (!propertyName) return fp;
         return fp ? (fp + '.' + propertyName) : propertyName;
     }
+    public validate(): boolean {
+        let that = this;
+        that.clearErrors();
+        return true;
+    }
+
     protected setModel(value: any, notify: boolean): void {
         let that = this;
         that._model = value;
@@ -104,7 +110,7 @@ export class BaseModel implements ModelObject {
     }
     protected _createProperties() { }
     protected _clearErrorsForProperty(propertyName: string): void { }
-    protected _schemaValidate(operation: number, propertyName: string): void { }
+    protected _schemaValidate(operation: number, propertyName: string): boolean { return true; }
 
     public isArray(): boolean {
         let that = this;

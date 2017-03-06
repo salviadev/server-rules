@@ -114,9 +114,6 @@ var
 				}
 				break;
 			case JSONTYPES.string:
-				if (schema.maxLength === undefined) schemaStates.maxLength = 2;
-				if (schema.minLength === undefined) schemaStates.minLength = 2;
-
 				break;
 
 		}
