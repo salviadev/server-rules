@@ -14,8 +14,8 @@ export class ObjectModel extends BaseModel {
         let that = this;
         let res = { continue: true, value: value }
         if (schemaUtils.isNumber(schema) && !isNaN(value) && value !== null && value !== undefined) {
-            if (that.$states[propertyName] && that.$states[propertyName].decimals !== undefined) {
-                res.value = parseFloat(value.toFixed(that.$states[propertyName].decimals));
+            if (that._states[propertyName] && that._states[propertyName].decimals !== undefined) {
+                res.value = parseFloat(value.toFixed(that._states[propertyName].decimals));
                 if (!forceContinue && oldValue === res.value)
                     res.continue = false;
             }
@@ -63,19 +63,34 @@ export class ObjectModel extends BaseModel {
                         let rootSchema = obj.getRoot().$schema;
                         if (schemaUtils.isObject(cschema, rootSchema)) {
                             that.replaceCompositionObject(propertyName, value);
-                            that.firePropChangedChanged(Message.PropChanged, propertyName, oldValue, value, { source: that._getPropertyPath(propertyName), instance: that });
+                            that.firePropChangedChanged(Message.PropChanged, propertyName, oldValue, value, { source: that._getPropertyPath(propertyName), instance: that }, true);
                         } else if (schemaUtils.isArrayOfObjects(cschema, rootSchema)) {
                             let child = that._children[propertyName];
                             if (child)
                                 child.setModel(value, true);
                         } else
-                            that.firePropChangedChanged(Message.PropChanged, propertyName, oldValue, value, { source: that._getPropertyPath(propertyName), instance: that });
+                            that.firePropChangedChanged(Message.PropChanged, propertyName, oldValue, value, { source: that._getPropertyPath(propertyName), instance: that }, true);
 
                     }
                 }
             },
             enumerable: true
         });
+    }
+    protected _schemaValidate(operation: number, propertyName: string) {
+        let that = this;
+        let errors = that.$errors[propertyName];
+        if (errors) {
+            let schema = that._schema.properties[propertyName];
+            if (schema) {
+                let state = that._states[propertyName];
+                if (state) {
+                    let obj: any = that;
+                    schemaUtils.validateProperty(obj[propertyName], schema, state, errors);
+                }
+            }
+        }
+
     }
 
     protected afterSetModel(notify: boolean): void {
@@ -122,17 +137,25 @@ export class ObjectModel extends BaseModel {
     }
     public clearErrors(): void {
         let that = this;
-        Object.keys(that.$errors).forEach(pn => {
-            let ei = that.$errors[pn];
-            ei.clearErrors();
-        });
-        Object.keys(that._children).forEach(pn => {
-            let child = that._children[pn];
-            child.clearErrors();
-        });
+        if (that.$errors) {
+            Object.keys(that.$errors).forEach(pn => {
+                let ei = that.$errors[pn];
+                ei.clearErrors();
+            });
+            Object.keys(that._children).forEach(pn => {
+                let child = that._children[pn];
+                child.clearErrors();
+            });
+        }
     }
+    protected _clearErrorsForProperty(propertyName: string): void {
+        let that = this;
+        if (that.$errors && that.$errors[propertyName]) {
+            that.$errors[propertyName].clearErrors();
 
+        }
 
+    }
 }
 
 

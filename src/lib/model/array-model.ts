@@ -38,7 +38,7 @@ export class ArrayModel extends BaseModel {
             that._items.push(new ObjectModel(that, '$item', schemaUtils.expandRefProp(that.$schema.items, root.$schema), modelItem));
         });
         if (notify)
-            that.firePropChangedChanged(Message.PropChanged, '', null, null, { source: that._getPropertyPath(), instance: that });
+            that.firePropChangedChanged(Message.PropChanged, '', null, null, { source: that._getPropertyPath(), instance: that }, true);
     }
     public push(modelItem: any): ObjectModel {
         let that = this;
@@ -46,7 +46,7 @@ export class ArrayModel extends BaseModel {
         let item = new ObjectModel(that, '$item', schemaUtils.expandRefProp(that.$schema.items, root.$schema), modelItem);
         that._model.push(modelItem);
         that._items.push(item);
-        that.firePropChangedChanged(Message.AddItem, '', null, null, { source: that._getPropertyPath(), instance: that, item: item });
+        that.firePropChangedChanged(Message.AddItem, '', null, null, { source: that._getPropertyPath(), instance: that, item: item }, true);
         return item;
     }
     public pop(): void {
@@ -54,7 +54,7 @@ export class ArrayModel extends BaseModel {
         let root = that.getRoot();
         that._model.pop();
         let item = that._items.pop();
-        that.firePropChangedChanged(Message.RemoveItem, '', null, null, { source: that._getPropertyPath(), instance: that, item: item });
+        that.firePropChangedChanged(Message.RemoveItem, '', null, null, { source: that._getPropertyPath(), instance: that, item: item }, true);
         item.destroy();
     }
     public get(index: number): ObjectModel {
@@ -78,7 +78,7 @@ export class ArrayModel extends BaseModel {
             that._items.push(item);
         }
         that._items.push(item);
-        that.firePropChangedChanged(Message.AddItem, '', null, null, { source: that._getPropertyPath(), instance: that, item: item });
+        that.firePropChangedChanged(Message.AddItem, '', null, null, { source: that._getPropertyPath(), instance: that, item: item }, true);
         return item;
     }
     public addError(message: string): void {

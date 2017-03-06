@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const assert = require("assert");
 const index_1 = require("../index");
-let schemaFacture = {
+let schemaOrder = {
     "name": "Facture",
     "type": "object",
     "title": "Facture",
@@ -43,7 +43,15 @@ let schemaFacture = {
             "type": "number",
             "format": "money"
         },
-        "lignes": {
+        "info": {
+            "type": "object",
+            "properties": {
+                "comment": {
+                    "type": "string"
+                }
+            }
+        },
+        "lines": {
             "type": "array",
             "items": {
                 "type": "object",
@@ -51,15 +59,15 @@ let schemaFacture = {
                 "title": "Ligne de Facture",
                 "primaryKey": [
                     "codeFact",
-                    "codeArticle"
+                    "codeItem"
                 ],
                 "properties": {
                     "codeFact": {
                         "type": "string",
                         "format": "code"
                     },
-                    "codeArticle": {
-                        "title": "Article",
+                    "codeItem": {
+                        "title": "Item",
                         "type": "string",
                         "format": "code"
                     },
@@ -108,7 +116,7 @@ let schemaFacture = {
                 },
                 "indexes": [
                     {
-                        "fields": "codeArticle"
+                        "fields": "codeItem"
                     }
                 ]
             }
@@ -133,32 +141,38 @@ let schemaFacture = {
 };
 describe('Proxy create', () => {
     it('Create from schema', function () {
-        let facture = new index_1.ObjectModel(null, '', schemaFacture, { $create: true });
+        let order = new index_1.ObjectModel(null, '', schemaOrder, { $create: true });
         //add 2 lines 
-        facture.lignes = [{ $create: true }, { $create: true }];
-        assert.equal(facture.lignes.length, 2, 'La facture a 2 lignes');
+        assert.equal(order.lines.length, 0, 'The order has 2 lines');
+        assert.notEqual(order.info, null, 'Info is initialized');
+        assert.notEqual(order.info, undefined, 'Info is initialized');
+        assert.equal(order.$states.info, undefined, 'Info hasn\'t state');
+        assert.notEqual(order.lines, null, 'Lines are initialized');
+        assert.notEqual(order.lines, undefined, 'Lines are initialized');
+        assert.notEqual(order.$states.lines, undefined, 'Lines have states');
+        assert.notEqual(order.$states.lines, null, 'Lines have states');
     });
     it('Test initialisation from schema', function () {
-        let facture = new index_1.ObjectModel(null, '', schemaFacture, { $create: true, lignes: [{}, {}] });
-        let lf = facture.lignes.get(0);
+        let order = new index_1.ObjectModel(null, '', schemaOrder, { $create: true, lines: [{ codeItem: 'A' }, { codeItem: 'B' }] });
+        let lf = order.lines.get(0);
         assert.equal(lf.tauxTVA, 20, 'Default taux tva is 20');
         assert.equal(lf.mntTVA, 0, 'Default Mnt tva is 0');
     });
     it('Test states', function () {
-        let facture = new index_1.ObjectModel(null, '', schemaFacture, { $create: true, lignes: [{}, {}] });
-        let lf = facture.lignes.get(0);
+        let order = new index_1.ObjectModel(null, '', schemaOrder, { $create: true, lines: [{ codeItem: 'A' }, { codeItem: 'B' }] });
+        let lf = order.lines.get(0);
         lf.tauxTVA = 20.333;
         assert.equal(lf.tauxTVA, 20.33, 'Decimals round');
         lf.$states.tauxTVA.decimals = 3;
         lf.tauxTVA = 20.333;
         assert.equal(lf.tauxTVA, 20.333, 'Decimals round after decimals changed');
     });
-    it('Test errors', function () {
-        let facture = new index_1.ObjectModel(null, '', schemaFacture, { $create: true, lignes: [{}, {}] });
-        let lf = facture.lignes.get(0);
+    it('Test errors Base', function () {
+        let order = new index_1.ObjectModel(null, '', schemaOrder, { $create: true, lines: [{ codeItem: 'A' }, { codeItem: 'B' }] });
+        let lf = order.lines.get(0);
         lf.$errors.tauxTVA.addError('Test Error');
         assert.equal(lf.$errors.tauxTVA.hasErrors(), true, 'Has error');
-        facture.clearErrors();
+        order.clearErrors();
         assert.equal(lf.$errors.tauxTVA.hasErrors(), false, 'No errors');
         lf.$errors.tauxTVA.addError('Test Error');
         assert.equal(lf.$errors.tauxTVA.hasErrors(), true, 'Has error (2)');
@@ -168,5 +182,20 @@ describe('Proxy create', () => {
         assert.equal(lf.$errors.tauxTVA.hasErrors(), true, 'TauxTva is greater than 100');
         lf.tauxTVA = 99;
         assert.equal(lf.$errors.tauxTVA.hasErrors(), false, 'TauxTva is less than 100');
+    });
+    it('Test errors composition one-to-one', function () {
+        let order = new index_1.ObjectModel(null, '', schemaOrder, { $create: true, lines: [{ codeItem: 'A' }, { codeItem: 'B' }] });
+        assert.equal(order.$errors.info, undefined, 'Info hasn\'t errors');
+        let info = order.info;
+        assert.equal(info.$errors.$, undefined, 'Info hasn\'t glb errors');
+        assert.notEqual(order.$errors.$, undefined, 'Order has glb errors');
+    });
+    it('Test errors composition  one-to-many', function () {
+        let order = new index_1.ObjectModel(null, '', schemaOrder, { $create: true, lines: [{ codeItem: 'A' }, { codeItem: 'B' }] });
+        let oi = order.lines.get(0);
+        assert.notEqual(oi.$errors.$, null, 'Order item has glb errors');
+        assert.notEqual(oi.$errors.$, undefined, 'Order item has glb errors');
+        assert.notEqual(order.$errors.lines, undefined, 'Lines have errors');
+        assert.notEqual(order.$errors.lines, undefined, 'Lines have errors');
     });
 });

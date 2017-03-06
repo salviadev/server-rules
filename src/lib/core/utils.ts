@@ -93,13 +93,13 @@ var
 
     };
 
-
-
-
 export var extend = _extend;
 export var uuid = _genUuid;
 export var allocId = _createID;
 export var equals = _equals;
+export var formatByPosition = _formatByPosition;
+export var formatByName = _formatByName;
+
 
 
 

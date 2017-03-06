@@ -1,3 +1,4 @@
+import { Errors } from './errors';
 export declare const JSONTYPES: any;
 export declare const JSONFORMATS: {
     email: string;
@@ -17,3 +18,4 @@ export declare const typeOfProperty: (propSchema: {
     reference?: string;
 }) => string;
 export declare const isNumber: (prop: any) => boolean;
+export declare const validateProperty: (value: any, schema: any, state: any, errors: Errors) => boolean;

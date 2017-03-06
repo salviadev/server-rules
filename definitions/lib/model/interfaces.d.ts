@@ -9,6 +9,7 @@ export interface ModelObject {
     rmvError(message: string): void;
     clearErrors(): void;
     fireMetaDataChanged(propertyName: string, params: any): void;
+    firePropChangedChanged(operation: number, propertyName: string, oldvalue: any, newValue: any, params: any, source: boolean): void;
     readonly $schema: any;
     readonly $errors: any;
 }

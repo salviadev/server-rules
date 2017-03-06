@@ -1,4 +1,8 @@
-import { currentLocale } from '../localisation/locale'
+import { currentLocale, currentLang, formatMoney, formatDecimal } from '../localisation/locale'
+import { messages } from '../localisation/messages'
+import { formatByPosition } from '../core/utils'
+import { Errors } from './errors'
+
 export const JSONTYPES: any = {
 	string: 'string',
 	integer: 'integer',
@@ -129,25 +133,122 @@ var
 				schemaStates.symbol = schema.symbol;
 		}
 
+	},
+	_formatNumber = (state: any, schema: any, value: number): string => {
+		if (schema.format == JSONFORMATS.money)
+			return formatMoney(value, false);
+		return formatDecimal(value, schema.decimals || 0, null);
+	},
+	_checkNumber = (value: any, state: any, schema: any, errors: Errors): boolean => {
+		let res = true;
+		if (schema.exclusiveMinimum) {
+			if (state.minimum != undefined && value <= state.minimum) {
+				errors.addError(formatByPosition(messages(currentLang).schema.minNumberExclusive, schema.title, _formatNumber(state, schema, state.minimum)));
+				res = false;
+			}
+		} else {
+			if (schema.minimum != undefined && value < schema.minimum) {
+				errors.addError(formatByPosition(messages(currentLang).schema.minNumber, schema.title, _formatNumber(state, schema, state.minimum)));
+				res = false;
+			}
+		}
+		if (schema.exclusiveMaximum) {
+			if (schema.maximum != undefined && value >= schema.maximum) {
+				errors.addError(formatByPosition(messages(currentLang).schema.maxNumberExclusive, schema.title, _formatNumber(state, schema, state.maximum)));
+				res = false;
+			}
+		} else {
+			if (schema.maximum != undefined && value > schema.maximum) {
+				errors.addError(formatByPosition(messages(currentLang).schema.maxNumber, schema.title, _formatNumber(state, schema, state.maximum)));
+				res = false;
+			}
+		}
+		return res;
+	},
+	_validateEmail = (email: string, error: any): boolean => {
+		var re = /^([\w-]+(?:\.[\w-]+)*)@((?:[\w-]+\.)*\w[\w-]{0,66})\.([a-z]{2,6}(?:\.[a-z]{2})?)$/i;
+		return re.test(email);
+	},
+	_validateJson = (value: string, error: any): boolean => {
+		try {
+			JSON.parse(value);
+		} catch (ex) {
+			error.ex = ex;
+			return false;
+		}
+		return true;
 
+	},
+
+	_checkString = (value: any, state: any, schema: any, errors: Errors): boolean => {
+		let res = true;
+		let v = (value || '');
+		if (state.minLength && v.length < state.minLength) {
+			errors.addError(formatByPosition(messages(currentLang).schema.minLength, schema.title, state.minLength));
+			res = false;
+		}
+		if (state.isMandatory) {
+			if (v === '') {
+				errors.addError(formatByPosition(messages(currentLang).schema.required, schema.title));
+				res = false;
+			}
+		}
+		if (schema.format) {
+			if (schema.format === JSONFORMATS.email) {
+				if (value && !_validateEmail(value, {})) {
+					errors.addError(messages(currentLang).schema.invalidEmail);
+					res = false;
+				}
+
+			} else if (schema.format === JSONFORMATS.json) {
+				let error: any = {};
+				if (value && !_validateJson(value, error)) {
+					errors.addError(error.ex.message);
+					res = false;
+				}
+			}
+		}
+		return res;
+	},
+
+	_validateSchema = (value: any, schema: any, state: any, errors: Errors): boolean => {
+		let res = true;
+		if (!schema) return;
+		if (state) {
+			if (state.isHidden || state.isDisabled)
+				return res;
+		}
+		switch (schema.type) {
+			case JSONTYPES.number:
+			case JSONTYPES.integer:
+				res = _checkNumber(value, state, schema, errors);
+				break;
+			case JSONTYPES.string:
+				res = _checkString(value, state, schema, errors);
+				break;
+		}
+		return res;
 	},
 	_initFromSchema = function (schema: any, rootSchema: any, value: any, isCreate: boolean): void {
 		value.$states = value.$states || {};
+		schema.states = schema.states || {};
 		Object.keys(schema.properties).forEach(function (pn) {
 			let cs = schema.properties[pn];
 			if (_ignore(cs, rootSchema)) return;
-			let state = schema.states[pn] = schema.states[pn] || {};
-			let ns = value.$states[pn] = value.$states[pn] || {};
-			if (!state._initialized) {
-				_initializeSchemaState(cs, rootSchema, state);
-				state._initialized = true;
-			}
-
-			Object.keys(state).forEach(function (sn) {
-				if (ns[sn] === undefined) {
-					ns[sn] = state[sn];
+			if (!_isObject(cs, rootSchema)) {
+				let state = schema.states[pn] = schema.states[pn] || {};
+				let ns = value.$states[pn] = value.$states[pn] || {};
+				if (!state._initialized) {
+					_initializeSchemaState(cs, rootSchema, state);
+					state._initialized = true;
 				}
-			});
+
+				Object.keys(state).forEach(function (sn) {
+					if (ns[sn] === undefined) {
+						ns[sn] = state[sn];
+					}
+				});
+			}
 			if (_isObject(cs, rootSchema)) {
 				value[pn] = value[pn] || (isCreate ? {} : null);
 				if (value[pn])
@@ -162,7 +263,7 @@ var
 				}
 			} else {
 				if (isCreate) {
-					// in creaate mode load default values
+					// in create mode load default values
 					if (value[pn] === undefined) {
 						if (cs.default !== undefined && cs.default !== null)
 							value[pn] = _getDefault(cs.default);
@@ -191,3 +292,6 @@ export const expandRefProp = _expandRefProp;
 export const initFromSchema = _initFromSchema;
 export const typeOfProperty = _typeOfProperty;
 export const isNumber = _isNumber;
+export const validateProperty = _validateSchema;
+
+

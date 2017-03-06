@@ -97,6 +97,8 @@ export class BaseModel implements ModelObject {
         return that._cachePath;
     }
     protected _createProperties() { }
+    protected _clearErrorsForProperty(propertyName: string): void { }
+    protected _schemaValidate(operation: number, propertyName: string): void { }
 
     public isArray(): boolean {
         let that = this;
@@ -106,13 +108,27 @@ export class BaseModel implements ModelObject {
     public get owner(): ModelObject {
         return <ModelObject>this._owner;
     }
-    public addError(message: string): void {}
-    public rmvError(message: string): void {}
-    public clearErrors(): void {}
+    public addError(message: string): void { }
+    public rmvError(message: string): void { }
+    public clearErrors(): void { }
 
 
 
-    public firePropChangedChanged(operation: number, propertyName: string, oldvalue: any, newValue: any, params: any): void {
+
+    public firePropChangedChanged(operation: number, propertyName: string, oldvalue: any, newValue: any, params: any, source: boolean): void {
+        let that = this;
+        if (source && propertyName) {
+            that._clearErrorsForProperty(propertyName);
+            that._schemaValidate(operation, propertyName);
+        }
+        if (that._owner) {
+            let np = [];
+            if (that._propertyName)
+                np.push(that._propertyName)
+            if (propertyName)
+                np.push(propertyName);
+            that._owner.firePropChangedChanged(operation, np.join('.'), oldvalue, newValue, params, false)
+        }
     }
 
     public model() {
@@ -169,6 +185,4 @@ export class BaseModel implements ModelObject {
         that._owner = null;
         that._initialized = null;
     }
-
-
 }

@@ -24,12 +24,14 @@ export declare class BaseModel implements ModelObject {
     protected replaceCompositionObject(propertyName: string, value: any): void;
     getFullPath(): string;
     protected _createProperties(): void;
+    protected _clearErrorsForProperty(propertyName: string): void;
+    protected _schemaValidate(operation: number, propertyName: string): void;
     isArray(): boolean;
     readonly owner: ModelObject;
     addError(message: string): void;
     rmvError(message: string): void;
     clearErrors(): void;
-    firePropChangedChanged(operation: number, propertyName: string, oldvalue: any, newValue: any, params: any): void;
+    firePropChangedChanged(operation: number, propertyName: string, oldvalue: any, newValue: any, params: any, source: boolean): void;
     model(): any;
     fireMetaDataChanged(propertyName: string, params: any): void;
     onStateChange: (propertyName: string, params: any) => void;
