@@ -2,6 +2,8 @@ import { currentLocale, currentLang, formatMoney, formatDecimal } from '../local
 import { messages } from '../localisation/messages'
 import { formatByPosition } from '../core/utils'
 import { Errors } from './errors'
+import { ModelObject } from './interfaces'
+
 
 export const JSONTYPES: any = {
 	string: 'string',
@@ -58,7 +60,7 @@ var
 	_isArrayOfObjects = function (prop: any, rootSchema: any): boolean {
 		if (prop.type === JSONTYPES.array) {
 			let pitems = _expandRefProp(prop.items, rootSchema);
-			return pitems.type === JSONTYPES.object
+			return pitems.type === JSONTYPES.object;
 		} else
 			return false;
 	},
@@ -211,7 +213,48 @@ var
 		return res;
 	},
 
-	_validateSchema = (value: any, schema: any, state: any, errors: Errors): boolean => {
+	_pkFields = (pk: any): string[] => {
+		if (Array.isArray(pk))
+			return pk;
+		else
+			return pk.split(',').map(function (v: string) { return v.trim() });
+	},
+	_extractPkValue = (item: any, map: string[]): any => {
+		if (map.length == 1) return item[map[0]];
+		let o: any = {};
+		map.forEach((p: string) => { o[p] = item[p]; });
+		return o;
+	},
+
+
+	_checkArray = (value: any, state: any, schema: any, rootSchema: any, errors: Errors): boolean => {
+		let res = true;
+		let pitems = _expandRefProp(schema.items, rootSchema);
+		if (pitems.primaryKey && pitems.type === JSONTYPES.object && value && value.length) {
+			let keys = _pkFields(pitems.primaryKey);
+			let error = false;
+			let pks: string[] = [];
+
+			value.forEach((item: ModelObject) => {
+				if (error) return;
+				let model = item.model();
+				let ivalue = JSON.stringify(_extractPkValue(model, keys));
+				if (pks.indexOf(ivalue) < 0)
+					pks.push(ivalue);
+				else
+					error = true;
+			});
+			if (error) {
+				let msg = keys.length > 1 ? messages(currentLang).schema.uniqueColumns : messages(currentLang).schema.uniqueColumn;
+				value.addError(formatByPosition(msg, keys.join(', ')))
+				res = false;
+			}
+
+		}
+		return res;
+	},
+
+	_validateSchema = (value: any, schema: any, rootSchema: any, state: any, errors: Errors): boolean => {
 		let res = true;
 		if (!schema) return;
 		if (state) {
@@ -226,11 +269,16 @@ var
 			case JSONTYPES.string:
 				res = _checkString(value, state, schema, errors);
 				break;
+
+			case JSONTYPES.array:
+				res = _checkArray(value, state, schema, rootSchema, errors);
+				break;
 		}
 		return res;
 	},
 	_initFromSchema = function (schema: any, rootSchema: any, value: any, isCreate: boolean): void {
 		value.$states = value.$states || {};
+		value.$create = isCreate;
 		schema.states = schema.states || {};
 		Object.keys(schema.properties).forEach(function (pn) {
 			let cs = schema.properties[pn];

@@ -9,6 +9,12 @@ export class BaseModel implements ModelObject {
     private _cachePath: string;
     private _cacheRoot: ModelObject;
 
+    protected _create: boolean;
+    public get $create(): boolean {
+        return this._create;
+    }
+    
+
     protected _initialized: any;
     //is null ?
     public isNull: boolean;
@@ -19,7 +25,7 @@ export class BaseModel implements ModelObject {
     // if frozen not fire events
     protected _frozen: boolean;
     // parent
-    protected _owner: ModelObject;
+    protected _owner: BaseModel;
     // schema
     protected _schema: any;
     // model
@@ -118,6 +124,7 @@ export class BaseModel implements ModelObject {
     public firePropChangedChanged(operation: number, propertyName: string, oldvalue: any, newValue: any, params: any, source: boolean): void {
         let that = this;
         if (source && propertyName) {
+            source = false;
             that._clearErrorsForProperty(propertyName);
             that._schemaValidate(operation, propertyName);
         }
@@ -127,7 +134,7 @@ export class BaseModel implements ModelObject {
                 np.push(that._propertyName)
             if (propertyName)
                 np.push(propertyName);
-            that._owner.firePropChangedChanged(operation, np.join('.'), oldvalue, newValue, params, false)
+            that._owner.firePropChangedChanged(operation, np.join('.'), oldvalue, newValue, params, source)
         }
     }
 

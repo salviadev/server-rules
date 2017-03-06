@@ -86,7 +86,9 @@ export class ObjectModel extends BaseModel {
                 let state = that._states[propertyName];
                 if (state) {
                     let obj: any = that;
-                    schemaUtils.validateProperty(obj[propertyName], schema, state, errors);
+                    let rootModel = that.getRoot();
+                    let rootSchema = rootModel.$schema;
+                    schemaUtils.validateProperty(obj[propertyName], schema, rootSchema, state, errors);
                 }
             }
         }
@@ -95,11 +97,19 @@ export class ObjectModel extends BaseModel {
 
     protected afterSetModel(notify: boolean): void {
         let that = this;
-        let rootSchema = that.getRoot().$schema;
-        if (that._model) {
-            schemaUtils.initFromSchema(that._schema, rootSchema, that._model, that._model.$create);
+        let rootModel = that.getRoot();
+        let rootSchema = rootModel.$schema;
+        if (that._model && that._model.$create === 'undefined') {
+            that._create = true;
+            delete that._model.$create;
+
         }
-        delete that._model.$create;
+        if (that._model) {
+            that._model.$create =  that._model.$create || that._owner.$create;
+            schemaUtils.initFromSchema(that._schema, rootSchema, that._model, that._model.$create);
+            that._create = that._model.$create;
+            delete that._model.$create;
+        }
 
         schemaUtils.enumProperties(that._schema, rootSchema, function (propertyName: string, cschema: any, isObject: boolean, isArray: boolean) {
             that._createProperty(propertyName);
@@ -133,8 +143,12 @@ export class ObjectModel extends BaseModel {
     }
     public rmvError(message: string): void {
         let that = this;
-        that._owner.$errors[that._propertyName].rmvError(message);
+        if (that.$errors.$)
+            that.$errors.$.rmvError(message);
+        else if (that._owner)
+            that._owner.rmvError(message);
     }
+    
     public clearErrors(): void {
         let that = this;
         if (that.$errors) {

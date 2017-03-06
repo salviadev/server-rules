@@ -18,4 +18,4 @@ export declare const typeOfProperty: (propSchema: {
     reference?: string;
 }) => string;
 export declare const isNumber: (prop: any) => boolean;
-export declare const validateProperty: (value: any, schema: any, state: any, errors: Errors) => boolean;
+export declare const validateProperty: (value: any, schema: any, rootSchema: any, state: any, errors: Errors) => boolean;

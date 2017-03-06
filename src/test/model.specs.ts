@@ -208,7 +208,11 @@ describe('Proxy create', () => {
         let info = order.info;
         assert.equal(info.$errors.$, undefined, 'Info hasn\'t glb errors');
         assert.notEqual(order.$errors.$, undefined, 'Order has glb errors');
-    });
+        info.addError('Test');
+        assert.equal(order.$errors.$.hasErrors(), true, 'Root has errors');
+        info.rmvError('Test');
+        assert.equal(order.$errors.$.hasErrors(), false, 'Root has not errors');
+      });
 
     it('Test errors composition  one-to-many', function () {
         let order: any = new ObjectModel(null, '', schemaOrder, { $create: true, lines: [{ codeItem: 'A' }, { codeItem: 'B' }] });
@@ -217,6 +221,17 @@ describe('Proxy create', () => {
         assert.notEqual(oi.$errors.$, undefined, 'Order item has glb errors');
         assert.notEqual(order.$errors.lines, undefined, 'Lines have errors');
         assert.notEqual(order.$errors.lines, undefined, 'Lines have errors');
+        assert.equal(order.$errors.lines.hasErrors(), false, 'No errors for lines');
+        
+        oi = order.lines.push({ codeItem: 'A' });
+        assert.equal(order.$errors.lines.hasErrors(), true, 'Primary key violation');
+        order.lines = [{ codeItem: 'A' }, { codeItem: 'B' }];
+        assert.equal(order.$errors.lines.hasErrors(), false, 'No errors for lines');
+        oi = order.lines.push({ codeItem: 'A' });
+        assert.equal(order.$errors.lines.hasErrors(), true, 'Primary key violation');
+        oi = order.lines.get(0);
+        order.lines.remove(oi);
+        assert.equal(order.$errors.lines.hasErrors(), false, 'No errors for lines');
     });
 
 });

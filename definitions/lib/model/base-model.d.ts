@@ -2,12 +2,14 @@ import { ModelObject } from './interfaces';
 export declare class BaseModel implements ModelObject {
     private _cachePath;
     private _cacheRoot;
+    protected _create: boolean;
+    readonly $create: boolean;
     protected _initialized: any;
     isNull: boolean;
     isUndefined: boolean;
     uuid: string;
     protected _frozen: boolean;
-    protected _owner: ModelObject;
+    protected _owner: BaseModel;
     protected _schema: any;
     protected _model: any;
     protected _children: any;

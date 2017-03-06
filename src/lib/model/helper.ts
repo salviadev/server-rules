@@ -1,17 +1,23 @@
 import * as schemaUtils from './schema';
 
-
-export const destroyObject = _destroyObject;
-
-
 var
-   _destroyObject = (obj: any): void => {
+    _destroyObject = (obj: any): void => {
         if (obj) {
-            Object.keys(obj).forEach((ii: any) => {
+            Object.keys(obj).forEach((name: string) => {
+                let ii = obj[name];
                 ii.destroy();
             });
         };
     };
+
+
+export var destroyObject = _destroyObject;
+
+
+
+
+
+
 
 
 

@@ -1,1 +1,1 @@
-export declare const destroyObject: (obj: any) => void;
+export declare var destroyObject: (obj: any) => void;

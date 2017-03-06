@@ -7,7 +7,9 @@ export declare class ArrayModel extends BaseModel {
     destroy(): void;
     protected afterSetModel(notify: boolean): void;
     push(modelItem: any): ObjectModel;
+    forEach(cb: (item: ObjectModel, index: number) => void): void;
     pop(): void;
+    remove(item: ObjectModel): void;
     get(index: number): ObjectModel;
     readonly length: number;
     insert(index: number, modelItem: any): ObjectModel;
