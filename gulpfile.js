@@ -35,7 +35,7 @@ gulp.task('ts', ['clean'], function () {
 gulp.task('test', ['ts'], function () {
     var tsProject = ts.createProject(path.resolve('./tsconfig.json'));
     var tsResult = gulp.src(['./src/test/**/*.ts']).pipe(tsProject());
-    return tsResult.js.pipe(gulp.dest(path.resolve('./test')))
+    return tsResult.js.pipe(gulp.dest(path.resolve('./test')));
     
 });
 

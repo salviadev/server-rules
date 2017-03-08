@@ -85,7 +85,26 @@ var
         return _formatMoney(value, decimals, currentLocale.number.thousandSep,
             currentLocale.number.decimalSep, symbol,
             format);
+    },
+
+    _parseDateTimeISO8601 = (value: Date | string): Date => {
+        if (value instanceof Date) return value;
+        if (!value) return null;
+        var d = Date.parse(value);
+        if (isNaN(d))
+            return null;
+        return new Date(d);
+    },
+    _pad = (val: number, len: number): string => {
+        let sval = val + '';
+        while (sval.length < len) sval = '0' + val;
+        return sval;
+    },
+    _date2ISO = (value: Date): string => {
+        let yy = value.getFullYear(), mm = value.getMonth() + 1, dd = value.getDate();
+        return _pad(yy, 4) + '-' + _pad(mm, 2) + '-' + _pad(dd, 2);
     };
+
 
 
 export var supportedLocale: any = {
@@ -98,6 +117,8 @@ export var currentLang = 'en';
 
 export var formatMoney = _money;
 export var formatDecimal = _decimal;
+export var parseISODateTime = _parseDateTimeISO8601;
+export var date2ISO = _date2ISO;
 
 
 

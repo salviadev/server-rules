@@ -19,3 +19,4 @@ export declare const typeOfProperty: (propSchema: {
 }) => string;
 export declare const isNumber: (prop: any) => boolean;
 export declare const validateProperty: (value: any, schema: any, rootSchema: any, state: any, errors: Errors) => boolean;
+export declare const checkSchema: (schema: any, rootSchema?: any) => void;

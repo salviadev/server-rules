@@ -1,6 +1,6 @@
 import { currentLocale, currentLang, formatMoney, formatDecimal } from '../localisation/locale'
 import { messages } from '../localisation/messages'
-import { formatByPosition } from '../core/utils'
+import { formatByPosition, allocId } from '../core/utils'
 import { Errors } from './errors'
 import { ModelObject } from './interfaces'
 
@@ -32,7 +32,7 @@ export const JSONFORMATS = {
 const DEF_LINK = '#/definitions/';
 const DEF_LINK_LEN = DEF_LINK.length;
 var
-	_expandRefProp = function (schema: any, rootSchema: any): any {
+	_expandRefProp = (schema: any, rootSchema: any): any => {
 		if (schema.$ref) {
 			let refEntity = schema.$ref.substr(DEF_LINK_LEN);
 			let refSchema = rootSchema.definitions ? rootSchema.definitions[refEntity] : null;
@@ -42,41 +42,41 @@ var
 		}
 		return schema;
 	},
-	_ignore = function (prop: any, rootSchema: any): boolean {
+	_ignore = (prop: any, rootSchema: any): boolean => {
 		return ['ref/array', 'ref/object'].indexOf(prop.type) >= 0;
 	},
-	_isObject = function (prop: any, rootSchema: any): boolean {
+	_isObject = (prop: any, rootSchema: any): boolean => {
 		return prop.type === JSONTYPES.object;
 	},
-	_isArray = function (prop: any, rootSchema: any): boolean {
+	_isArray = (prop: any, rootSchema: any): boolean => {
 		return prop.type === JSONTYPES.array;
 	},
-	_isNumber = function (prop: any, ): boolean {
+	_isNumber = (prop: any, ): boolean => {
 		return prop.type === JSONTYPES.number || prop.type === JSONTYPES.integer;
 	},
-	_isInteger = function (prop: any, ): boolean {
+	_isInteger = (prop: any, ): boolean => {
 		return prop.type === JSONTYPES.integer;
 	},
-	_isArrayOfObjects = function (prop: any, rootSchema: any): boolean {
+	_isArrayOfObjects = (prop: any, rootSchema: any): boolean => {
 		if (prop.type === JSONTYPES.array) {
 			let pitems = _expandRefProp(prop.items, rootSchema);
 			return pitems.type === JSONTYPES.object;
 		} else
 			return false;
 	},
-	_enumProps = function (schema: any, rootSchema: any, cb: (propertyName: string, value: any, isObject: boolean, isArray: boolean) => void): void {
-		Object.keys(schema.properties).forEach(function (propName: string) {
+	_enumProps = (schema: any, rootSchema: any, cb: (propertyName: string, value: any, isObject: boolean, isArray: boolean) => void): void => {
+		Object.keys(schema.properties).forEach((propName: string) => {
 			let item = schema.properties[propName];
 			if (_ignore(item, rootSchema)) return;
 			cb(propName, item, _isObject(item, rootSchema), _isArray(item, rootSchema));
 		});
 
 	},
-	_getDefault = function (vDefault: any): any {
+	_getDefault = (vDefault: any): any => {
 		return vDefault;
 
 	},
-	_typeOfProperty = function (propSchema: { type?: string, format?: string, reference?: string }): string {
+	_typeOfProperty = (propSchema: { type?: string, format?: string, reference?: string }): string => {
 		let ps = propSchema.type || JSONTYPES.string;
 		if (!JSONTYPES[ps])
 			throw 'Unsupported schema type : ' + propSchema.type;
@@ -96,7 +96,47 @@ var
 		}
 		return ps;
 	},
-	_initializeSchemaState = function (schema: any, roolSchema: any, schemaStates: any) {
+	_enumCompositions = (schema: any, rootSchema: any, path: string, isArray: boolean, cb: (prefix: string, cs: any, rs: any, array: boolean) => boolean, expandStack?: string[]): void => {
+		rootSchema = rootSchema || schema;
+		expandStack = expandStack || [];
+		if (!cb(path, schema, rootSchema, isArray)) return;
+		Object.keys(schema.properties).forEach((name) => {
+			let prop = schema.properties[name];
+			if (_ignore(prop, rootSchema)) return;
+			let ref = schema.$ref;
+			if (ref) {
+				if (expandStack.indexOf(ref) >= 0) return;
+				expandStack.push(schema.$ref);
+				prop = expandRefProp(prop, rootSchema);
+			}
+			try {
+				if (prop.type === JSONTYPES.object) {
+					let cp = path ? path + '.' + name : name;
+					_enumCompositions(prop, rootSchema, cp, false, cb);
+				} else if (prop.type === JSONTYPES.array) {
+					let pitems = _expandRefProp(prop.items, rootSchema);
+					if (pitems.type === JSONTYPES.object) {
+						let cp = path ? path + '.' + name : name;
+						_enumCompositions(pitems, rootSchema, cp, true, cb);
+					}
+				}
+			} finally {
+				if (ref) expandStack.pop()
+			}
+		});
+	},
+	_extractClassNames = (schema: any, rootSchema: any): any => {
+		let res: any = {};
+		_enumCompositions(schema, rootSchema, '', false, (prefix, cs, rs, array) => {
+			if (cs.name) {
+				if (res[cs.name]) return false;
+				res[cs.name] = true;
+			}
+			return true;
+		});
+		return Object.keys(res).length ? res : null;
+	},
+	_initializeSchemaState = (schema: any, roolSchema: any, schemaStates: any) => {
 		let pt = _typeOfProperty(schema);
 		switch (pt) {
 			case JSONTYPES.integer:
@@ -214,7 +254,7 @@ var
 		if (Array.isArray(pk))
 			return pk;
 		else
-			return pk.split(',').map(function (v: string) { return v.trim() });
+			return pk.split(',').map((v: string) => { return v.trim() });
 	},
 	_extractPkValue = (item: any, map: string[]): any => {
 		if (map.length == 1) return item[map[0]];
@@ -273,13 +313,58 @@ var
 		}
 		return res;
 	},
-	_initFromSchema = function (schema: any, rootSchema: any, value: any, isCreate: boolean): void {
+	_expandRules = (rules: any[], names: any): any => {
+		let res: any = { rulesByClass: {}, rulesById: {} };
+		rules.forEach(rule => {
+			if (!rule.ruleType) return;
+			rule.triggers = rule.triggers.split(',').map((trigger: string) => trigger.trim());
+			rule.id = allocId();
+			res.rulesById[rule.id] = rule;
+			rule.entities && rule.entities.forEach((entity: any) => {
+				if (names[entity.entity]) {
+					rule.triggers.forEach((trigger: string) => {
+						let ct = rule.ruleType;
+						if (trigger === '$events.created')
+							ct = 'created';
+						else if (trigger === '$events.loaded')
+							ct = 'loaded';
+						else if (trigger === '$events.saving')
+							ct = 'saving';
+						res.rulesByClass[ct] = res.rulesByClass[ct] || {};
+						if (ct === 'created' || ct === 'loaded' || ct === 'saving') {
+							res.rulesByClass[ct][entity.entity] = res.rulesByClass[ct][entity.entity] || [];
+							res.rulesByClass[ct][entity.entity].push(rule.id);
+						} else {
+							let rbe = res.rulesByClass[ct][entity.entity] = res.rulesByClass[ct][entity.entity] || {};
+							rbe[trigger] = rbe[trigger] || [];
+							rbe[trigger].push(rule.id);
+						}
+
+					});
+
+				}
+			});
+		});
+		return res;
+
+	},
+	_checkSchema = (schema: any, rootSchema?: any): void => {
+		if (schema._checked) return;
+		schema._checked = true;
+		let names = schema.loadRules ? _extractClassNames(schema, schema) : null;
+		if (names && schema.rules) {
+			let rulesCfg = _expandRules(schema.rules, names);
+			schema.rules = rulesCfg.rulesByClass;
+			schema.rulesMap = rulesCfg.rulesById;
+		}
+
+	},
+	_initFromSchema = (schema: any, rootSchema: any, value: any, isCreate: boolean): void => {
 		value.$states = value.$states || {};
 		value.$create = isCreate;
 		schema.states = schema.states || {};
-		Object.keys(schema.properties).forEach(function (pn) {
+		Object.keys(schema.properties).forEach((pn) => {
 			let cs = schema.properties[pn];
-			if (_ignore(cs, rootSchema)) return;
 			if (!_isObject(cs, rootSchema)) {
 				let state = schema.states[pn] = schema.states[pn] || {};
 				let ns = value.$states[pn] = value.$states[pn] || {};
@@ -288,7 +373,7 @@ var
 					state._initialized = true;
 				}
 
-				Object.keys(state).forEach(function (sn) {
+				Object.keys(state).forEach((sn) => {
 					if (ns[sn] === undefined) {
 						ns[sn] = state[sn];
 					}
@@ -338,5 +423,8 @@ export const initFromSchema = _initFromSchema;
 export const typeOfProperty = _typeOfProperty;
 export const isNumber = _isNumber;
 export const validateProperty = _validateSchema;
+export const checkSchema = _checkSchema;
+
+
 
 

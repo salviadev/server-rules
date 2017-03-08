@@ -91,7 +91,25 @@ var
         if (!o1 || !o2) return false;
         return _eq(o1, o2);
 
-    };
+    },
+    _showAndLogRules = false,
+    _logRule = (spaces: number, rule: any, trigger: string): void => {
+        if (_showAndLogRules) {
+            spaces = (spaces || 1) - 1;
+            let sSpaces = new Array(spaces).join('  ');
+            if (typeof rule === 'string')
+                console.log(_formatByPosition('{0}{1}".', sSpaces, rule));
+            else
+                console.log(_formatByPosition('{0}Rule: "{1} - {2}", triggered by "{3}".', sSpaces, rule.name, rule.description, trigger));
+        }
+    },
+    _showRules = (value?: boolean): boolean => {
+        if (value !== undefined) {
+            _showAndLogRules = value;
+        }
+        return _showAndLogRules;
+    }
+    ;
 
 export var extend = _extend;
 export var uuid = _genUuid;
@@ -99,6 +117,9 @@ export var allocId = _createID;
 export var equals = _equals;
 export var formatByPosition = _formatByPosition;
 export var formatByName = _formatByName;
+
+export var logRule = _logRule;
+export var showRules = _showRules;
 
 
 

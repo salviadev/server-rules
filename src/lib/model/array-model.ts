@@ -45,10 +45,13 @@ export class ArrayModel extends BaseModel {
     public push(modelItem: any): ObjectModel {
         let that = this;
         let root = that.getRoot();
+        modelItem.$create = true;
         let item = new ObjectModel(that, '$item', schemaUtils.expandRefProp(that.$schema.items, root.$schema), modelItem);
         that._model.push(modelItem);
         that._items.push(item);
         that.firePropChangedChanged(Message.AddItem, '', null, null, { source: that._getPropertyPath(), instance: that, item: item }, true);
+       
+        
         return item;
     }
 

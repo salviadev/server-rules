@@ -5,11 +5,13 @@ import { Errors } from './errors';
 import { ModelObject } from './interfaces';
 import { BaseModel } from './base-model';
 import { ArrayModel } from './array-model';
+import { execInitRules, execBeforeSaveRules, execValidationRules, execRules} from './rules';
 
 
 
 export class ObjectModel extends BaseModel {
-    private _className: string;
+    private _stack: string[];
+
     private _beforeChange(propertyName: string, schema: any, oldValue: any, value: any, forceContinue: boolean): { continue: boolean, value: any } {
         let that = this;
         let res = { continue: true, value: value }
@@ -59,6 +61,7 @@ export class ObjectModel extends BaseModel {
                     value = bcRes.value;
                     that._initialized[propertyName] = true;
                     if (bcRes.continue) {
+                        if (that._isRecursiveRule(propertyName)) return;
                         that._model[propertyName] = value;
                         let rootSchema = obj.getRoot().$schema;
                         if (schemaUtils.isObject(cschema, rootSchema)) {
@@ -77,6 +80,18 @@ export class ObjectModel extends BaseModel {
             enumerable: true
         });
     }
+    private _isRecursiveRule(propertyName: string): boolean {
+        let that = this;
+        let root = <ObjectModel>that.getRoot();
+        if (!root._stack) return;
+        let path = that._getPropertyPath(propertyName);
+        if (root._stack.indexOf(path) >= 0) {
+            utils.logRule(root._stack.length, 'Recursive rule detected: property: ' + path, path);
+            return true;
+        }
+        return false;
+    }
+
     protected _schemaValidate(operation: number, propertyName: string): boolean {
         let that = this;
         let res = true;
@@ -96,18 +111,28 @@ export class ObjectModel extends BaseModel {
         return res;
 
     }
+    protected _execRulesOnPropChange(operation: number, propertyName: string, params: any) {
+        let that = this;
+        if (that._owner) return;
+        if (!that._schema.rules) return;
+        that._stack = that._stack || [];
+        that._stack.push(propertyName)
+        try {
+            execRules(operation, propertyName, that, params)
+        } finally {
+            that._stack.pop();
+            if (!that._stack.length) return;
+        }
+    }
+
+
 
     protected afterSetModel(notify: boolean): void {
         let that = this;
         let rootModel = that.getRoot();
         let rootSchema = rootModel.$schema;
-        if (that._model && that._model.$create === 'undefined') {
-            that._create = true;
-            delete that._model.$create;
-
-        }
         if (that._model) {
-            that._model.$create = that._model.$create || that._owner.$create;
+            that._model.$create = that._model.$create || (that._owner && that._owner.$create);
             schemaUtils.initFromSchema(that._schema, rootSchema, that._model, that._model.$create);
             that._create = that._model.$create;
             delete that._model.$create;
@@ -126,13 +151,22 @@ export class ObjectModel extends BaseModel {
             that._states = that._model.$states;
         if (!that._owner || (that._owner && that._owner.isArray()))
             that._createErrorProperty('$');
+        let oldFrozen = that._frozen;
+        that._frozen = true;
+        try {
+            execInitRules(that);
+        } finally {
+            that._frozen = oldFrozen;
+        }
     }
 
     constructor(owner: any, propertyName: string, schema: any, value: any) {
         super(owner, propertyName, schema, value);
-        let that = this;
-        that._className = schema.name;
     }
+    public stack(): string[] {
+        return this._stack;
+    }
+
     public destroy() {
         super.destroy();
     }
@@ -166,15 +200,21 @@ export class ObjectModel extends BaseModel {
     public validate(): boolean {
         let that = this;
         let res = super.validate();
+        // execute rules before saving
+        execBeforeSaveRules(that);
         Object.keys(that._children).forEach(pn => {
             let child = that._children[pn];
             if (!child.validate())
                 res = false;
         });
+        // validate own properties
         Object.keys(that._schema.properties).forEach(propertyName => {
             if (!that._schemaValidate(Message.PropChanged, propertyName))
                 res = false;
         });
+        //call validation rules
+        if (!execValidationRules(that))
+            res = false;
         return res;
     }
 
@@ -182,7 +222,6 @@ export class ObjectModel extends BaseModel {
         let that = this;
         if (that.$errors && that.$errors[propertyName]) {
             that.$errors[propertyName].clearErrors();
-
         }
 
     }

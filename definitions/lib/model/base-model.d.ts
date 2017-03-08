@@ -35,6 +35,7 @@ export declare class BaseModel implements ModelObject {
     rmvError(message: string): void;
     clearErrors(): void;
     firePropChangedChanged(operation: number, propertyName: string, oldvalue: any, newValue: any, params: any, source: boolean): void;
+    protected _execRulesOnPropChange(operation: number, propertyName: string, params: any): void;
     model(): any;
     fireMetaDataChanged(propertyName: string, params: any): void;
     onStateChange: (propertyName: string, params: any) => void;

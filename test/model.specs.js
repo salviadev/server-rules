@@ -213,6 +213,5 @@ describe('Proxy create', () => {
         oi = order.lines.get(0);
         order.lines.remove(oi);
         assert.equal(order.$errors.lines.hasErrors(), false, 'No errors for lines');
-        assert.equal(order.validate(), true, 'No errors ');
     });
 });

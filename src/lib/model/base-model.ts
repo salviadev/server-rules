@@ -13,7 +13,7 @@ export class BaseModel implements ModelObject {
     public get $create(): boolean {
         return this._create;
     }
-    
+
 
     protected _initialized: any;
     //is null ?
@@ -74,6 +74,7 @@ export class BaseModel implements ModelObject {
     }
     public validate(): boolean {
         let that = this;
+        // clear all errrors 
         that.clearErrors();
         return true;
     }
@@ -100,10 +101,14 @@ export class BaseModel implements ModelObject {
         let that = this;
         if (that._cachePath === undefined) {
             let segments: string[] = [];
-            if (that._owner)
-                segments.push(that._owner.getFullPath())
-            segments.push(that._propertyName || '');
-            that._cachePath = segments.join('');
+            if (that._owner) {
+                let ownerPath = that._owner.getFullPath();
+                if (ownerPath)
+                    segments.push(ownerPath)
+            }
+            if (that._propertyName)
+                segments.push(that._propertyName || '');
+            that._cachePath = segments.join('.');
 
         }
         return that._cachePath;
@@ -141,7 +146,14 @@ export class BaseModel implements ModelObject {
             if (propertyName)
                 np.push(propertyName);
             that._owner.firePropChangedChanged(operation, np.join('.'), oldvalue, newValue, params, source)
+        } else {
+            if (params.instance && params.source && params.source === propertyName) {
+                that._execRulesOnPropChange(operation, propertyName, params);
+            }
+
         }
+    }
+    protected _execRulesOnPropChange(operation: number, propertyName: string, params: any) {
     }
 
     public model() {
@@ -170,15 +182,15 @@ export class BaseModel implements ModelObject {
         let that = this;
         that.uuid = utils.uuid()
         that._owner = owner;
+        if (!that._owner)
+            schemaUtils.checkSchema(schema);
         that._propertyName = propertyName;
         that._schema = schema;
         that._children = {};
         that._initialized = {};
         that._states = {};
         that._errors = {};
-        that._frozen = true;
         that.setModel(value, false);
-        that._frozen = false;
     }
     public destroy() {
         let that = this;
