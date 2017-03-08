@@ -209,8 +209,8 @@ let schemaOrder = {
         {
             "name": "RP_003",
             "description": "déduire montant total",
-            "expression": "o.mntTotalTTC = ctx.sum(o.lignes, 'mntTTC'); o.mntTotalHT = ctx.sum(o.lignes.mntHT)",
-            "triggers": "lignes, lignes.mntTTC, lignes.mntHT",
+            "expression": "o.mntTotalTTC = ctx.sum(o.lines, 'mntTTC'); o.mntTotalHT = ctx.sum(o.lines.mntHT)",
+            "triggers": "lines, lines.mntTTC, lines.mntHT",
             "ruleType": "propagation",
             "entities": [
                 {
@@ -404,5 +404,21 @@ describe('Rules', () => {
         oi.qte = 0;
         assert.equal(oi.$errors.qte.hasErrors(), true, 'Qte is required (5)');
         oi = order.lines.push({ codeItem: 'C' });
+    });
+    it('Propagation rules', function () {
+        let order = new index_1.ObjectModel(null, '', schemaOrder, { $create: true });
+        let oi = order.lines.push({ codeItem: 'A', tauxTVA: 20 });
+        oi.prixUnit = 10;
+        oi.qte = 3;
+        assert.equal(oi.mntHT, 30, 'mntHT = qte * prixUnit');
+        assert.equal(oi.mntTVA, 6, 'mntTVA = tauxTVA * mntHT / 100');
+        assert.equal(oi.mntTTC, 36, 'mntTTC = mntTVA + mntHT');
+        assert.equal(order.mntTotalHT, 30, '(1) o.mntTotalHT = ctx.sum(o.lines.mntHT)');
+        assert.equal(order.mntTotalTTC, 36, '(2) o.mntTotalTTC = ctx.sum(o.lines.mntTTC)');
+        oi = order.lines.push({ codeItem: 'B', tauxTVA: 20 });
+        oi.prixUnit = 20;
+        oi.qte = 3;
+        assert.equal(order.mntTotalHT, 90, '(1) o.mntTotalHT = ctx.sum(o.lines.mntHT)');
+        assert.equal(order.mntTotalTTC, 108, '(2) o.mntTotalTTC = ctx.sum(o.lines.mntTTC)');
     });
 });
