@@ -436,8 +436,8 @@ describe('Rules', () => {
         oi = order.lines.push({ codeItem: 'B',  tauxTVA: 20 });
         oi.prixUnit = 20;
         oi.qte = 3;
-        assert.equal(order.mntTotalHT, 90 , '(1) o.mntTotalHT = ctx.sum(o.lines.mntHT)');
-        assert.equal(order.mntTotalTTC, 108, '(2) o.mntTotalTTC = ctx.sum(o.lines.mntTTC)');
+        assert.equal(order.mntTotalHT, 90 , '(3) o.mntTotalHT = ctx.sum(o.lines.mntHT)');
+        assert.equal(order.mntTotalTTC, 108, '(4) o.mntTotalTTC = ctx.sum(o.lines.mntTTC)');
 
 
 
