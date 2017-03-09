@@ -347,7 +347,7 @@ let schemaOrder = {
 };
 describe('Rules', () => {
     it('Load Rules', function () {
-        let order = new index_1.ObjectModel(null, '', schemaOrder, { $create: true, lines: [{ codeItem: 'A' }, { codeItem: 'B' }] });
+        let order = index_1.createInstance(schemaOrder, { $create: true, lines: [{ codeItem: 'A' }, { codeItem: 'B' }] });
         assert.notEqual(order.$schema.rules, undefined, 'Rules (1)');
         assert.notEqual(order.$schema.rules, undefined, 'Rules (2)');
         assert.notEqual(order.$schema.rulesMap, undefined, 'Rules (3)');
@@ -361,12 +361,12 @@ describe('Rules', () => {
         assert.notEqual(order.$schema.rules.validation.OrderItem, undefined, 'Rules (11)');
     });
     it('Create rule', function () {
-        let order = new index_1.ObjectModel(null, '', schemaOrder, { $create: true, lines: [{ codeItem: 'A' }, { codeItem: 'B' }] });
+        let order = index_1.createInstance(schemaOrder, { $create: true, lines: [{ codeItem: 'A' }, { codeItem: 'B' }] });
         let today = (new Date()).toISOString().substr(0, 10);
         assert.equal(order.dateFact, today, 'Rules : Date facture initialisée à la date du jour');
         let oi = order.lines.get(0);
         assert.equal(oi.$states.tauxTVA.isMandatory, true, 'VAT rate is mandatory (1)');
-        order = new index_1.ObjectModel(null, '', schemaOrder, { dateFact: '2001-01-01', lines: [{ codeItem: 'A' }, { codeItem: 'B' }] });
+        order = index_1.createInstance(schemaOrder, { dateFact: '2001-01-01', lines: [{ codeItem: 'A' }, { codeItem: 'B' }] });
         assert.notEqual(order.dateFact, today, 'Rules : Date facture initialisée à la date du jour - not called');
         oi = order.lines.get(0);
         assert.notEqual(oi.$states.tauxTVA.isMandatory, true, 'VAT rate is mandatory (2)');
@@ -374,7 +374,7 @@ describe('Rules', () => {
         assert.equal(oi.$states.tauxTVA.isMandatory, true, 'VAT rate is mandatory (3)');
     });
     it('Load rule', function () {
-        let order = new index_1.ObjectModel(null, '', schemaOrder, { lines: [{ codeItem: 'A', tauxTVA: 20 }, { codeItem: 'B', tauxTVA: 21 }] });
+        let order = index_1.createInstance(schemaOrder, { lines: [{ codeItem: 'A', tauxTVA: 20 }, { codeItem: 'B', tauxTVA: 21 }] });
         assert.equal(order.$states.dateFact.isReadOnly, true, 'Order date is readOnly');
         let oi = order.lines.get(0);
         assert.equal(oi.$states.tauxTVA.isReadOnly, true, 'VAT rate is readOnly');
@@ -383,13 +383,13 @@ describe('Rules', () => {
         assert.equal(oi.$states.tauxTVA.isMandatory, true, 'VAT rate is mandatory (3)');
     });
     it('Before save rules', function () {
-        let order = new index_1.ObjectModel(null, '', schemaOrder, { lines: [{ codeItem: 'A', tauxTVA: 20 }, { codeItem: 'B', tauxTVA: 21 }] });
+        let order = index_1.createInstance(schemaOrder, { lines: [{ codeItem: 'A', tauxTVA: 20 }, { codeItem: 'B', tauxTVA: 21 }] });
         order.saving = false;
         let res = order.validate();
         assert.equal(order.saving, true, 'Rule before saving called');
     });
     it('Validation rules', function () {
-        let order = new index_1.ObjectModel(null, '', schemaOrder, { lines: [{ codeItem: 'A', tauxTVA: 20 }, { codeItem: 'B', tauxTVA: 21 }, { codeItem: 'B', tauxTVA: 30 }] });
+        let order = index_1.createInstance(schemaOrder, { lines: [{ codeItem: 'A', tauxTVA: 20 }, { codeItem: 'B', tauxTVA: 21 }, { codeItem: 'B', tauxTVA: 30 }] });
         let res = order.validate();
         assert.equal(res, false, 'Has errors (1)');
         assert.equal(order.$errors.lines.hasErrors(), true, 'Pk violation');
@@ -406,7 +406,7 @@ describe('Rules', () => {
         oi = order.lines.push({ codeItem: 'C' });
     });
     it('Propagation rules', function () {
-        let order = new index_1.ObjectModel(null, '', schemaOrder, { $create: true });
+        let order = index_1.createInstance(schemaOrder, { $create: true });
         let oi = order.lines.push({ codeItem: 'A', tauxTVA: 20 });
         oi.prixUnit = 10;
         oi.qte = 3;
@@ -418,7 +418,7 @@ describe('Rules', () => {
         oi = order.lines.push({ codeItem: 'B', tauxTVA: 20 });
         oi.prixUnit = 20;
         oi.qte = 3;
-        assert.equal(order.mntTotalHT, 90, '(1) o.mntTotalHT = ctx.sum(o.lines.mntHT)');
-        assert.equal(order.mntTotalTTC, 108, '(2) o.mntTotalTTC = ctx.sum(o.lines.mntTTC)');
+        assert.equal(order.mntTotalHT, 90, '(3) o.mntTotalHT = ctx.sum(o.lines.mntHT)');
+        assert.equal(order.mntTotalTTC, 108, '(4) o.mntTotalTTC = ctx.sum(o.lines.mntTTC)');
     });
 });

@@ -2,7 +2,7 @@
 import * as mochaUtils from 'mocha';
 import * as assert from 'assert';
 
-import { ObjectModel } from '../index';
+import { createInstance } from '../index';
 
 
 let schemaOrder = {
@@ -359,7 +359,7 @@ let schemaOrder = {
 
 describe('Rules', () => {
     it('Load Rules', function () {
-        let order: any = new ObjectModel(null, '', schemaOrder, { $create: true, lines: [{ codeItem: 'A' }, { codeItem: 'B' }] });
+        let order: any = createInstance(schemaOrder, { $create: true, lines: [{ codeItem: 'A' }, { codeItem: 'B' }] });
         assert.notEqual(order.$schema.rules, undefined, 'Rules (1)');
         assert.notEqual(order.$schema.rules, undefined, 'Rules (2)');
         assert.notEqual(order.$schema.rulesMap, undefined, 'Rules (3)');
@@ -374,12 +374,12 @@ describe('Rules', () => {
 
     });
     it('Create rule', function () {
-        let order: any = new ObjectModel(null, '', schemaOrder, { $create: true, lines: [{ codeItem: 'A' }, { codeItem: 'B' }] });
+        let order: any = createInstance(schemaOrder, { $create: true, lines: [{ codeItem: 'A' }, { codeItem: 'B' }] });
         let today = (new Date()).toISOString().substr(0, 10);
         assert.equal(order.dateFact, today, 'Rules : Date facture initialisée à la date du jour');
         let oi = order.lines.get(0);
         assert.equal(oi.$states.tauxTVA.isMandatory, true, 'VAT rate is mandatory (1)');
-        order = new ObjectModel(null, '', schemaOrder, { dateFact: '2001-01-01', lines: [{ codeItem: 'A' }, { codeItem: 'B' }] });
+        order = createInstance(schemaOrder, { dateFact: '2001-01-01', lines: [{ codeItem: 'A' }, { codeItem: 'B' }] });
         assert.notEqual(order.dateFact, today, 'Rules : Date facture initialisée à la date du jour - not called');
         oi = order.lines.get(0);
         assert.notEqual(oi.$states.tauxTVA.isMandatory, true, 'VAT rate is mandatory (2)');
@@ -387,7 +387,7 @@ describe('Rules', () => {
         assert.equal(oi.$states.tauxTVA.isMandatory, true, 'VAT rate is mandatory (3)');
     });
     it('Load rule', function () {
-        let order: any = new ObjectModel(null, '', schemaOrder, { lines: [{ codeItem: 'A', tauxTVA: 20 }, { codeItem: 'B', tauxTVA: 21 }] });
+        let order: any = createInstance(schemaOrder, { lines: [{ codeItem: 'A', tauxTVA: 20 }, { codeItem: 'B', tauxTVA: 21 }] });
         assert.equal(order.$states.dateFact.isReadOnly, true, 'Order date is readOnly');
         let oi = order.lines.get(0);
         assert.equal(oi.$states.tauxTVA.isReadOnly, true, 'VAT rate is readOnly');
@@ -396,14 +396,14 @@ describe('Rules', () => {
         assert.equal(oi.$states.tauxTVA.isMandatory, true, 'VAT rate is mandatory (3)');
     });
     it('Before save rules', function () {
-        let order: any = new ObjectModel(null, '', schemaOrder, { lines: [{ codeItem: 'A', tauxTVA: 20 }, { codeItem: 'B', tauxTVA: 21 }] });
+        let order: any = createInstance(schemaOrder, { lines: [{ codeItem: 'A', tauxTVA: 20 }, { codeItem: 'B', tauxTVA: 21 }] });
         order.saving = false;
         let res = order.validate();
         assert.equal(order.saving, true, 'Rule before saving called');
     });
 
     it('Validation rules', function () {
-        let order: any = new ObjectModel(null, '', schemaOrder, { lines: [{ codeItem: 'A', tauxTVA: 20 }, { codeItem: 'B', tauxTVA: 21 }, { codeItem: 'B', tauxTVA: 30 }] });
+        let order: any = createInstance(schemaOrder, { lines: [{ codeItem: 'A', tauxTVA: 20 }, { codeItem: 'B', tauxTVA: 21 }, { codeItem: 'B', tauxTVA: 30 }] });
         let res = order.validate();
         assert.equal(res, false, 'Has errors (1)');
         assert.equal(order.$errors.lines.hasErrors(), true, 'Pk violation');
@@ -421,7 +421,7 @@ describe('Rules', () => {
     });
 
     it('Propagation rules', function () {
-        let order: any = new ObjectModel(null, '', schemaOrder, { $create: true });
+        let order: any = createInstance(schemaOrder, { $create: true });
         let oi: any = order.lines.push({ codeItem: 'A',  tauxTVA: 20 });
         oi.prixUnit = 10;
         oi.qte = 3;

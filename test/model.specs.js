@@ -141,7 +141,7 @@ let schemaOrder = {
 };
 describe('Proxy create', () => {
     it('Create from schema', function () {
-        let order = new index_1.ObjectModel(null, '', schemaOrder, { $create: true });
+        let order = index_1.createInstance(schemaOrder, { $create: true });
         //add 2 lines 
         assert.equal(order.lines.length, 0, 'The order has 2 lines');
         assert.notEqual(order.info, null, 'Info is initialized');
@@ -153,13 +153,13 @@ describe('Proxy create', () => {
         assert.notEqual(order.$states.lines, null, 'Lines have states');
     });
     it('Test initialisation from schema', function () {
-        let order = new index_1.ObjectModel(null, '', schemaOrder, { $create: true, lines: [{ codeItem: 'A' }, { codeItem: 'B' }] });
+        let order = index_1.createInstance(schemaOrder, { $create: true, lines: [{ codeItem: 'A' }, { codeItem: 'B' }] });
         let lf = order.lines.get(0);
         assert.equal(lf.tauxTVA, 20, 'Default taux tva is 20');
         assert.equal(lf.mntTVA, 0, 'Default Mnt tva is 0');
     });
     it('Test states', function () {
-        let order = new index_1.ObjectModel(null, '', schemaOrder, { $create: true, lines: [{ codeItem: 'A' }, { codeItem: 'B' }] });
+        let order = index_1.createInstance(schemaOrder, { $create: true, lines: [{ codeItem: 'A' }, { codeItem: 'B' }] });
         let lf = order.lines.get(0);
         lf.tauxTVA = 20.333;
         assert.equal(lf.tauxTVA, 20.33, 'Decimals round');
@@ -168,7 +168,7 @@ describe('Proxy create', () => {
         assert.equal(lf.tauxTVA, 20.333, 'Decimals round after decimals changed');
     });
     it('Test errors Base', function () {
-        let order = new index_1.ObjectModel(null, '', schemaOrder, { $create: true, lines: [{ codeItem: 'A' }, { codeItem: 'B' }] });
+        let order = index_1.createInstance(schemaOrder, { $create: true, lines: [{ codeItem: 'A' }, { codeItem: 'B' }] });
         let lf = order.lines.get(0);
         lf.$errors.tauxTVA.addError('Test Error');
         assert.equal(lf.$errors.tauxTVA.hasErrors(), true, 'Has error');
@@ -184,7 +184,7 @@ describe('Proxy create', () => {
         assert.equal(lf.$errors.tauxTVA.hasErrors(), false, 'TauxTva is less than 100');
     });
     it('Test errors composition one-to-one', function () {
-        let order = new index_1.ObjectModel(null, '', schemaOrder, { $create: true, lines: [{ codeItem: 'A' }, { codeItem: 'B' }] });
+        let order = index_1.createInstance(schemaOrder, { $create: true, lines: [{ codeItem: 'A' }, { codeItem: 'B' }] });
         assert.equal(order.$errors.info, undefined, 'Info hasn\'t errors');
         let info = order.info;
         assert.equal(info.$errors.$, undefined, 'Info hasn\'t glb errors');
@@ -195,7 +195,7 @@ describe('Proxy create', () => {
         assert.equal(order.$errors.$.hasErrors(), false, 'Root has not errors');
     });
     it('Test errors composition  one-to-many', function () {
-        let order = new index_1.ObjectModel(null, '', schemaOrder, { $create: true, lines: [{ codeItem: 'A' }, { codeItem: 'B' }] });
+        let order = index_1.createInstance(schemaOrder, { $create: true, lines: [{ codeItem: 'A' }, { codeItem: 'B' }] });
         let oi = order.lines.get(0);
         assert.notEqual(oi.$errors.$, null, 'Order item has glb errors');
         assert.notEqual(oi.$errors.$, undefined, 'Order item has glb errors');

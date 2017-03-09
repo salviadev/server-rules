@@ -2,7 +2,7 @@
   "name": "server-rules",
   "description": "server-rules",
   "version": "1.0.0",
-  "author": "SalviaDeveloppement",
+  "author": "Mihai STOIE",
   "license": "MIT",
   "devDependencies": {
     "@types/mocha": "latest",
